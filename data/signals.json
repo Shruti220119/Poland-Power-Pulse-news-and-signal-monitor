@@ -1,6 +1,25 @@
 {
- "updated": "2026-10-23T10:57:54+00:00",
+ "updated": "2026-10-23T11:28:20+00:00",
  "signals": [
+  {
+   "id": "live-1106a19ca6",
+   "date": "2026-10-23",
+   "title": "Leader of junior coalition partner quits Polish government",
+   "summary": "However, her party, Poland 2050, is set to remain in the government.",
+   "links": [
+    {
+     "label": "Notes From Poland — article",
+     "url": "https://notesfrompoland.com/2026/10/23/leader-of-junior-coalition-partner-quits-polish-government/",
+     "type": "press"
+    }
+   ],
+   "cos": [
+    "ALL"
+   ],
+   "publisher": "Notes From Poland",
+   "lang": "en",
+   "region": "National"
+  },
   {
    "id": "live-98f3d4d1da",
    "date": "2026-10-20",
