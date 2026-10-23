@@ -1,0 +1,1 @@
+# Poland-Power-Pulse-news-and-signal-monitor
