@@ -2,8 +2,8 @@ name: Update live news feed
 
 on:
   schedule:
-    - cron: "*/30 * * * *"     # every 30 minutes (GitHub may delay runs by a few minutes)
-  workflow_dispatch:            # adds the "Run workflow" button
+    - cron: "*/30 * * * *"     # every 30 minutes
+  workflow_dispatch:            # "Run workflow" button
 
 permissions:
   contents: write
@@ -14,26 +14,64 @@ concurrency:
 
 jobs:
   update:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+
+      - name: Check repository files
+        run: |
+          if [ ! -f scripts/feed_fetcher.py ]; then
+            echo "::error::scripts/feed_fetcher.py is missing. Upload it into a folder named 'scripts' at the repo root."
+            exit 1
+          fi
+          mkdir -p data
+          [ -f data/signals.json ] || echo '{"updated": null, "signals": []}' > data/signals.json
+
       - name: Fetch live items
         run: python scripts/feed_fetcher.py
-      - name: Commit only if the feed changed
+
+      - name: Save feed to repository
         run: |
+          set +e
+          BRANCH="${GITHUB_REF_NAME}"
           git config user.name  "github-actions[bot]"
           git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
-          git add data/signals.json
-          if git diff --cached --quiet; then
-            echo "No new items - nothing to commit."
-            exit 0
-          fi
-          git commit -m "Live feed update $(date -u +'%Y-%m-%d %H:%M UTC')"
-          git pull --rebase origin "${GITHUB_REF_NAME}"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
-          git commit -m "Live feed update $(date -u +'%Y-%m-%d %H:%M UTC')"
-          git pull --rebase origin "${GITHUB_REF_NAME}"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+          cp data/signals.json "$RUNNER_TEMP/signals.json"
+
+          for attempt in 1 2 3; do
+            git fetch origin "$BRANCH" || { echo "::error::Could not fetch branch '$BRANCH'."; exit 1; }
+            git reset --hard "origin/$BRANCH"          # take the latest repo state (no merge conflicts)
+            mkdir -p data
+            cp "$RUNNER_TEMP/signals.json" data/signals.json
+            git add data/signals.json
+            if git diff --cached --quiet; then
+              echo "No new items - nothing to commit."
+              exit 0
+            fi
+            git commit -q -m "Live feed update $(date -u +'%Y-%m-%d %H:%M UTC')"
+            OUT=$(git push origin "HEAD:$BRANCH" 2>&1); RC=$?
+            echo "$OUT"
+            if [ $RC -eq 0 ]; then echo "Feed saved."; exit 0; fi
+            if echo "$OUT" | grep -qiE "403|permission|denied"; then
+              echo "::error::Push blocked. Go to Settings > Actions > General > Workflow permissions, choose 'Read and write permissions', Save, then re-run."
+              exit 1
+            fi
+            if echo "$OUT" | grep -qiE "protected branch|GH006|rule"; then
+              echo "::error::Branch '$BRANCH' is protected. Allow github-actions to push, or remove the branch rule in Settings > Branches / Rules."
+              exit 1
+            fi
+            echo "Push attempt $attempt failed - retrying in 10 s..."; sleep 10
+            done
+          echo "::error::Push failed after 3 attempts. See the log lines above."
+          exit 1
+
+          done
+          echo "::error::Push failed after 3 attempts. See the log lines above."
+          exit 1
