@@ -1,6 +1,25 @@
 {
- "updated": "2026-10-25T13:55:14+00:00",
+ "updated": "2026-10-25T14:18:29+00:00",
  "signals": [
+  {
+   "id": "live-a3389ab6cf",
+   "date": "2026-10-25",
+   "title": "Time is running out for Germany to pay Polish WWII victims the compensation they deserve [Opinion]",
+   "summary": "Philipp Fritz There are 30,000-50,000 such survivors, but their number dwindles every week.",
+   "links": [
+    {
+     "label": "Notes From Poland — article",
+     "url": "https://notesfrompoland.com/2026/10/25/time-is-running-out-for-germany-to-pay-polish-wwii-victims-the-compensation-they-deserve-opinion/",
+     "type": "press"
+    }
+   ],
+   "cos": [
+    "ALL"
+   ],
+   "publisher": "Notes From Poland",
+   "lang": "en",
+   "region": "National"
+  },
   {
    "id": "live-1106a19ca6",
    "date": "2026-10-23",
