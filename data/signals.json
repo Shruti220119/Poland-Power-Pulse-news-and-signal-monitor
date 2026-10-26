@@ -1,6 +1,25 @@
 {
- "updated": "2026-10-26T09:11:54+00:00",
+ "updated": "2026-10-26T10:11:51+00:00",
  "signals": [
+  {
+   "id": "live-bf175469ef",
+   "date": "2026-10-26",
+   "title": "Greenvolt sells off two 800 MWh Polish battery projects for $438 million",
+   "summary": "From 2021, Greenvolt has pursued projects in Poland and after completing construction on a combined 1.6 GWh, has sold the assets. The post Greenvolt sells off two 800 MWh Polish battery projects for $438 million appeared first on Energy Storage .",
+   "links": [
+    {
+     "label": "ESS News — article",
+     "url": "https://www.ess-news.com/2026/10/26/greenvolt-sells-off-two-800-mwh-polish-battery-projects-for-438-million/",
+     "type": "press"
+    }
+   ],
+   "cos": [
+    "ALL"
+   ],
+   "publisher": "ESS News",
+   "lang": "en",
+   "region": "National"
+  },
   {
    "id": "live-a3389ab6cf",
    "date": "2026-10-25",
