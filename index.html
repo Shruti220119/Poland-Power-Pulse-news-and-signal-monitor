@@ -2983,4 +2983,20 @@ render();
   render();
 })();
 </script>
+<script>
+/* ═══ v68: strict monitoring-scope filter for LIVE (auto-fetched) items ═══
+   A live item is shown only if its headline is clearly about the monitoring scope
+   (energy technology, power-market policy, or a monitored company/body) and is not
+   about an off-scope topic (history, war, politics, defence, opinion, society, sport).
+   Applies to News Feed, Signal Monitor and Newsletter. Curated items are unaffected. */
+(function(){
+  const IN=/energ|electric|power (plant|station|market|grid|sector|price|generation|purchase)|\bgrid\b|\bwind\b|wind farm|offshore|onshore|solar|\bpv\b|photovolt|batter|storage|\bbess\b|nuclear|\bsmr\b|reactor|\bgas\b|\blng\b|ccgt|ocgt|peaker|\bcoal\b|lignite|\bheat|\bchp\b|cogenerat|hydrogen|biomethane|capacity market|capacity auction|\bcfd\b|renewabl|\bppa\b|tariff|interconnect|transmission|substation|turbine|prąd|wiatr|słoneczn|fotowolt|magazyn|jądrow|atomow|węgl|ciepł|ciepl|sieci|gazow|\b(pge|enea|energa|orlen|tauron|pej|pse|ure|ze pak|polenergia|synthos|osge|equinor|ørsted|orsted|rwe|engie|axpo|fortum|edpr|westinghouse|bechtel|ge vernova)\b/i;
+  const OUT=/\bwwii\b|world war|second world war|nazi|holocaust|reparation|compensation .*victims|\bvictims\b|\[opinion\]|\bopinion\b|\bop-ed\b|\bnato\b|military|\barmy\b|apache|missile|defen[cs]e (minister|spending|industry)|security forum|ready to fight|coalition partner|quits .*government|\belection\b|\bpresidential (race|campaign)\b|migra|refugee|football|\bsport|olympic|museum|exhibition|\bfilm\b|church|abortion|court rul|\bcrime\b|police|murder|weather forecast/i;
+  const head=s=>(s.title||'')+' '+(s.title_pl||'')+' '+(s.src_title||'');
+  const offScope=s=>{ if(!s||!s.auto) return false; const h=head(s); return OUT.test(h) || !IN.test(h); };
+  window.offScopeLive=offScope;
+  const _p=passes; passes=function(s,skip){ if(offScope(s)) return false; return _p(s,skip); };
+  render();
+})();
+</script>
 </body></html>
