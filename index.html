@@ -2999,4 +2999,44 @@ render();
   render();
 })();
 </script>
+<script>
+/* ═══ v69: multi-keyword search fix ═══
+   Bug: the search box lost its spaces while typing (the box was re-filled with the trimmed
+   text on every keystroke), so "PGE storage" became "PGEstorage" and found nothing.
+   Now: type several words in any order; every word must match (AND).
+   Also: Polish letters optional (Gdansk = Gdańsk), exact phrases in "quotes",
+   and the exact/Polish headline, English translation and publisher are searched too. */
+(function(){
+  const fold = t => String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/ł/g,'l').replace(/ø/g,'o').replace(/[’‘]/g,"'");
+  function terms(q){
+    const out=[], rx=/"([^"]+)"|(\S+)/g; let m;
+    while((m=rx.exec(fold(q)))) out.push((m[1]||m[2]).trim());
+    return out.filter(Boolean);
+  }
+  function hay(s){
+    return fold([s.title,s.title_pl,s.src_title,s.src_en,s.sig_title,s.summary,s.change,s.why,s.unit,
+      s.region,(s.assets||[]).join(' '),(s.cos||[]).map(coLabel).join(' '),
+      (s.tech||[]).map(t=>TECH_LABEL[t]||t).join(' '),s.publisher].join(' '));
+  }
+  const _p = passes;
+  passes = function(s, skip){
+    const q = F.q; if(!q || !q.trim()) return _p(s, skip);
+    F.q = ''; let ok; try{ ok = _p(s, skip); } finally { F.q = q; }
+    if(!ok) return false;
+    const h = hay(s);
+    return terms(q).every(w => h.includes(w));
+  };
+  /* replace the search box listener so typed spaces are kept */
+  const old = document.getElementById('q');
+  const box = old.cloneNode(true); old.parentNode.replaceChild(box, old);
+  box.value = F.q || '';
+  box.addEventListener('input', e => { F.q = e.target.value; render(); });
+  box.placeholder = 'Search — several words allowed, e.g. PGE storage · "capacity market" · Gdansk CCGT';
+  /* reset button: also clear the new box */
+  const rs = document.getElementById('reset');
+  if(rs){ const prev = rs.onclick; rs.onclick = () => { if(prev) prev(); F.q=''; box.value=''; render(); }; }
+  render();
+})();
+</script>
 </body></html>
