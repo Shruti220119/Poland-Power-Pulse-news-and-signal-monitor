@@ -2375,6 +2375,7 @@ render();
   ];
   const BMAP=Object.fromEntries(BUILD_SUBS.map(x=>[x[0],{label:x[1],col:x[2]}]));
   function buildSub(s){
+    if(window.STAGE_FIX&&STAGE_FIX[s.id]) return STAGE_FIX[s.id];
     const h=((s.change||'')+' '+(s.title||'')).toLowerCase();
     if(s.sub==='SET'||/delay|missed|postpone|cancel|withdr|terminat|suspend|curtail|not been met|opóźni/.test(h)) return 'SET';
     if(/commercial operation|comes online|online|energis|first power|first electricity|commissioning|start-up phase|rozruch|back online|synchronis/.test(h)) return 'COM';
@@ -2413,6 +2414,7 @@ render();
     return false;
   }
   function isBuildSignal(s){
+      if(window.SIG_EXCLUDE&&SIG_EXCLUDE.has(s.id)) return false;
       if(s.newsOnly) return false;
       /* v60: Plans & Announcements = project-related only. Policy/regulation items and
          corporate-admin items (office moves, group strategy adoption) are not project plans,
@@ -3040,28 +3042,21 @@ render();
 })();
 </script>
 <style>
-/* v70: no "LIVE" label on news items (News Feed, Signal Monitor, rail) */
+/* v70: no "LIVE" label on news items */
 .pill.livep{display:none!important}
 </style>
 <script>
-/* v70: strip any remaining "LIVE" tags from rendered items */
 (function(){
   const strip=()=>document.querySelectorAll('#view .pill.livep').forEach(e=>e.remove());
   const _r=render; render=function(){ _r(); strip(); };
-  render();
 })();
 </script>
 <script>
-/* v71: live-feed classification fix.
-   Live items are now classified from the HEADLINE first (the summary is only a fallback),
-   and sale/disposal wording (sell, sells, sold, selling, offload, dispose) counts as an
-   acquisition/divestment. Previously "Greenvolt sells off..." fell through to
-   "Construction Progress" because its summary mentioned "completing construction".
-   Live items also get a real "What changed" line instead of the category name. */
+/* v71: live-feed classification — headline first; sale wording = acquisition/divestment */
 (function(){
   const RULES=[
     ['SET',/delay|postpone|cancel|withdraw|terminat|suspend|halt|curtail|opóźni|anulow|wycof/i],
-    ['MA',/\b(sells?|selling|sold|sale|offload\w*|dispos\w*|divest\w*|acqui\w*|buys?|bought|takeover|takes over|stake|merger|buy-?out|squeeze-?out)\b|przejęc|sprzeda/i],
+    ['MA',/\b(sells?|selling|sold|sale|offload\w*|dispos\w*|divest\w*|acqui\w*|buys?|bought|snaps? up|takeover|takes over|stake|merger|buy-?out|squeeze-?out)\b|przejęc|sprzeda/i],
     ['FIN',/\bfid\b|final investment|financ\w*|loan|financial close|bond|kredyt|finansow/i],
     ['SUP',/\bcfd\b|subsid|grant|co-financ|state aid|support scheme|dotacj|wsparci/i],
     ['CAP',/capacity market|capacity auction|auction|aukcj|rynek mocy|rynku mocy/i],
@@ -3075,14 +3070,238 @@ render();
     let r=RULES.find(([,rx])=>rx.test(t));
     if(!r) r=RULES.find(([,rx])=>rx.test(s.summary||''));
     if(r && SC[r[0]]){ s.sub=r[0]; s.cat=SC[r[0]].cat; s.cats=[s.cat,s.sub]; }
-    if(!s.change || s.change===catLabel(s.cat) || /^[A-Z][\w ,&]+$/.test(s.change)&&SC[Object.keys(SC).find(k=>SC[k].label===s.change)]){
+    if(!s.change || Object.values(SC).some(c=>c.label===s.change)){
       const first=String(s.summary||'').split(/(?<=[.!?])\s+/)[0]||'';
       s.change=(first && first.split(/\s+/).length<=30)?first:(s.title||'');
     }
-    s._d=null;
   }
-  const fixAll=()=>{ (SIGNALS||[]).forEach(relabel); };
-  const _r=render; render=function(){ fixAll(); _r(); };
+  window.__relabel=relabel;
+  const _r=render; render=function(){ (SIGNALS||[]).forEach(relabel); _r(); };
+  render();
+})();
+</script>
+<script>
+/* v72: categorisation audit fixes (curated items) */
+window.STAGE_FIX={   /* Signal Monitor lifecycle stage */
+  o4:'CON',  /* batteries delivered, energisation due Dec → construction, not commissioning */
+  h19:'CON', /* all turbines installed → construction milestone */
+  h18:'COM', /* first electricity to grid → commissioning */
+  b1:'CON',  /* "nears commissioning" → still construction */
+  o1:'PLAN', /* agreement to prepare 2nd NPP → plan, not contract award */
+  x5:'PLAN', /* strategic letter on storage → plan */
+  nu7:'PLAN',/* cooperation agreement for up to six SMRs → plan */
+  n2:'PLAN', /* PGE targets 10 GW gas → plan */
+  h14:'MA', w2:'MA', /* OSGE shareholder / project-lead changes → ownership change */
+  n6:'FIN',  /* TAURON approves construction of Jaworzno OCGT → investment decision */
+  h6:'PROC', /* AtkinsRéalis framework → contract award, not support award */
+  ic1:'PLAN',/* preparing for auction → not yet an award */
+  c1:'FIN',  /* Fortum commits €85m → investment decision */
+  h14:'MA'
+};
+window.SIG_EXCLUDE=new Set(['ic9']); /* EDF "not withdrawing" — no change, not a signal */
+(function(){
+  const NEWS_FIX={  /* News Feed sub-category */
+    h21:'STR', h25:'LEG', w5:'ADQ', h20:'MOU', o1:'MOU', h29:'SCH', h30:'SET', h31:'CON',
+    h32:'SUP', o6:'MA', m6:'MA', n27:'SUP', c1:'FIN', h14:'MOU', ic1:'CAP'
+  };
+  const TECH_FIX={ r3:['biomass'] }; /* biomethane is not hydrogen */
+  SIGNALS.forEach(x=>{
+    const k=NEWS_FIX[x.id]; if(k&&SC[k]){ x.sub=k; x.cat=SC[k].cat; x.cats=[x.cat,k]; CLS[x.id]=Object.assign(CLS[x.id]||{}, {sub:k}); }
+    if(TECH_FIX[x.id]){ x.tech=TECH_FIX[x.id]; CLS[x.id]=Object.assign(CLS[x.id]||{}, {tech:x.tech}); }
+  });
+  render();
+})();
+</script>
+<script>
+/* ═══ v73: stricter de-duplication (News Feed, Signal Monitor, Newsletter, counters) ═══
+   Two items are the SAME story if they are ≤14 days apart and ANY of these holds:
+   R1 Same primary article URL (query/tracking stripped; listing pages like "current-reports" ignored)
+   R2 Near-identical headline (word overlap ≥ 60%)
+   R3 Same event: same event type AND ≤10 days apart AND a shared rare name in the headline
+      as the headline subject (e.g. "Greenvolt …"; names in >4 headlines are ignored) with some
+      headline overlap, or the same asset with some text overlap
+   R4 Same company + same event type + a shared key figure (MW, MWh, GW, PLN, €, $, %) or
+      combined headline+summary overlap ≥ 35%
+   R5 ≤2 days apart, same event type, same specific figure (e.g. 1,560 MW) and some text overlap
+   Financial results are never merged across companies.
+   Kept version priority: curated > live feed; official source (gov/company) > press; earlier date.
+   Links of removed duplicates are merged into the kept item ("also reported by"). */
+(function(){
+  const LISTING=/(current-reports|komunikaty-prasowe|results-center|press-releases?|aktualnosci\/?$|news\/?$|media\/?$)/i;
+  const canon=u=>{ try{ const x=new URL(u); x.search=''; x.hash='';
+      const p=x.pathname.replace(/\/+$/,''); if(p.split('/').filter(Boolean).length<2||LISTING.test(p)) return null;
+      return (x.hostname.replace(/^www\./,'')+p).toLowerCase(); }catch(e){ return null; } };
+  const W=t=>new Set(String(t||'').toLowerCase().replace(/[^a-z0-9ąćęłńóśźż ]/g,' ').split(/\s+/).filter(w=>w.length>3));
+  const J=(a,b)=>{let i=0;a.forEach(x=>{if(b.has(x))i++;});return i/Math.max(1,a.size+b.size-i);};
+  const GENERIC=new Set(['poland','polish','polska','europe','european','baltic','energy','power','group','the','new','first','largest','pge','enea','energa','orlen','tauron','pse','ure','minister','ministry','government','state','first','update','statement','report','results','estimated','capital','financial','selected','operating','data','quarter','offshore','wind','solar','battery','storage','nuclear','project','projects','plant','farm','farms','auction','contract','agreement','signs','acquires','january','february','march','april','may','june','july','august','september','october','november','december','dispatch','weekly','summary','monday','tuesday','wednesday','thursday','friday']);
+  const names=t=>new Set((String(t||'').match(/\b[A-ZĄĆĘŁŃÓŚŹŻ][\wąćęłńóśźż.\-]{2,}/g)||[]).map(x=>x.toLowerCase().replace(/[’'s]+$/,'')).filter(x=>!GENERIC.has(x)));
+  const figs=t=>new Set((String(t||'').toLowerCase().match(/\d+(?:[.,]\d+)?\s?(?:mw|mwh|gw|gwh|twh|bn|billion|million|m\b|%|zł|pln|eur|€|\$)/g)||[]).map(x=>x.replace(/\s/g,'')));
+  const days=(a,b)=>Math.abs(new Date(a.date)-new Date(b.date))/86400000;
+  const rank=s=>(s.auto?0:4)+((s.links||[]).some(l=>l.type==='gov'||l.type==='company')?2:0);
+  /* keys come from each item's OWN fields only (never from merged links) */
+  let DF=null;
+  const df=()=>{ if(DF) return DF; DF=new Map(); (SIGNALS||[]).forEach(s=>new Set(rawNames(s.title)).forEach(n=>DF.set(n,(DF.get(n)||0)+1))); return DF; };
+  function rawNames(t){ return (String(t||'').match(/\b[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż][\wąćęłńóśźż.\-]{2,}/g)||[]).map(x=>x.toLowerCase().replace(/[’']s$/,'')).filter(x=>!GENERIC.has(x)); }
+  const distinct=t=>new Set(rawNames(t).filter(n=>(df().get(n)||0)<=4));
+  function keys(s){
+    if(s._k) return s._k;
+    const prim=canon(((s.links||[])[0]||{}).url||'');
+    return s._k={prim, w:W(s.title), ws:W(s.title+' '+s.summary), n:distinct(s.title), lead:(()=>{const f=rawNames(String(s.title||'').split(/\s+/).slice(0,2).join(' '))[0];return f&&(df().get(f)||0)<=4?f:'';})(), f:figs(s.title+' '+s.summary)};
+  }
+  function same(a,b){
+    const d=days(a,b); if(d>14) return '';
+    const A=keys(a), B=keys(b);
+    if(A.prim && A.prim===B.prim) return 'R1';
+    if(J(A.w,B.w)>=0.6) return 'R2';
+    if(a.sub!==b.sub || a.sub==='RES') return '';      /* results are never merged across companies */
+    if(d<=10){
+      if((a.assets||[]).some(x=>(b.assets||[]).includes(x)) && J(A.ws,B.ws)>=0.2) return 'R3';
+      /* same distinctive name as the headline SUBJECT in both (e.g. "Greenvolt sells…" / "Greenvolt to sell…") */
+      if(A.lead && A.lead===B.lead && J(A.w,B.w)>=0.12) return 'R3';
+    }
+    const co=(a.cos||[]).some(c=>c!=='ALL'&&(b.cos||[]).includes(c));
+    let fig=false; for(const x of A.f) if(B.f.has(x) && /\d{3}|\d[.,]\d/.test(x)) fig=true;
+    if(co && (fig || J(A.ws,B.ws)>=0.35)) return 'R4';
+    if(d<=2 && fig && J(A.ws,B.ws)>=0.12) return 'R5';  /* same day/figure, e.g. auction results from regulator + bidder */
+    return '';
+  }
+  window.dupLog=[];
+  window.dedupe=dedupe=function(list){
+    const out=[];
+    list.forEach(s=>{
+      if(s.dupOf) return;
+      const i=out.findIndex(o=>same(o,s));
+      if(i<0){ out.push(s); return; }
+      const o=out[i], tS=window.sourceTier?sourceTier(s):0, tO=window.sourceTier?sourceTier(o):0;
+      const keep=(tS!==tO? tS<tO : (rank(s)>rank(o)||(rank(s)===rank(o)&&s.date<o.date)))?s:o, drop=keep===s?o:s;
+      const seen=new Set((keep.links||[]).map(l=>l.url));
+      (drop.links||[]).forEach(l=>{ if(!seen.has(l.url)){ (keep.links=keep.links||[]).push(Object.assign({},l,{label:(drop.publisher||'Also reported')+' — also reported'})); seen.add(l.url);} });
+      dupLog.push({kept:keep.title, removed:drop.title, rule:same(o,s)});
+      out[i]=window.__finalize?__finalize(keep,drop):keep;
+    });
+    return out;
+  };
+  render();
+})();
+</script>
+<script>
+/* ═══ v74: source-priority de-duplication + content-based same-event check ═══
+   SOURCE PRIORITY (kept version when several sources report the same event):
+     Tier 1  Official / primary — the company itself, ministries, regulator (URE), TSO (PSE), PEJ,
+             EU institutions, stock-exchange (ESPI/EBI) reports
+     Tier 2  Specialist energy trade press & wires — World Nuclear News, NucNet, Renewables Now,
+             CEEnergyNews, ESS News, pv magazine, Baltic Wind, Energy-Storage.News, WysokieNapiecie,
+             Gramwzielone, CIRE, wnp.pl, Energetyka24, PAP Biznes, Reuters, Enerdata …
+     Tier 3  General / aggregator press — Notes From Poland, Yahoo, MarketScreener, Poland-24,
+             Euronews, Hindustan Times, UA.NEWS, regional radio, blogs …
+   Tie-break: curated (analyst-checked) > live feed, then earliest report.
+   SAME-EVENT CHECK uses the article content, not just the headline:
+     R6  ≤3 days apart, AND headline "event fingerprint" overlap ≥ 50%
+         (synonyms unified: station→plant, signs/signed→sign, deal/pact→agreement, Polish→Poland …),
+         OR headline+summary overlap ≥ 30% with ≥ 4 shared specific terms
+         (e.g. Ministry of Energy + PEJ + PGE + second nuclear plant).
+     R6/R7 compare a live-feed item with any other item (curated items are already analyst-checked).
+     R7  ≤3 days apart, same named asset, same technology and same event type (e.g. Pątnów SMR joint venture). */
+(function(){
+  const T1=/^(PGE|Enea|Energa|Energa-Operator|Energa Storage|ORLEN|TAURON|PEJ|PSE|URE|ZE PAK|Polenergia|Axpo|ENGIE Polska|Fortum|Equinor|Ørsted|RWE|EDP|EDP Renewables|TotalEnergies|Northland Power|Ocean Winds|Baltic Power|Westinghouse|GE Vernova|AtkinsRéalis|Valmet|Van Oord|KKR|Actis|European Energy|VSB Energie Odnawialne Polska|EIB|EXIM|Litgrid|Ministry of Energy|Ministry of Climate and Environment|Polish Government|Chancellery of the Prime Minister \(KPRM\)|European Commission|EUR-Lex.*|Bankier\.pl \(ZE PAK ESPI report\))$/i;
+  const T2=/^(World Nuclear News|NucNet|Renewables Now|CEEnergyNews|ESS News|pv magazine|Baltic Wind|Energy-Storage\.News|WysokieNapiecie\.pl|Gramwzielone\.pl|CIRE|wnp\.pl|Energetyka24|PAP Biznes|StrefaInwestorow\.pl.*|Reuters|Enerdata|Clean Energy Wire|Forum Energii|Enlit World|inspiratia|Riviera|Utility Dive|DatacenterDynamics|Energy Drink.*|PSME|Dentons|CMS|SSW|Wodne Sprawy)$/i;
+  const tier=s=>{ const p=(s.publisher||'').trim();
+    if(T1.test(p) || (s.links||[]).slice(0,1).some(l=>l.type==='gov'||l.type==='company'||l.type==='official')) return 1;
+    return T2.test(p)?2:3; };
+  window.sourceTier=tier;
+
+  const SYN=[[/\bstations?\b/g,'plant'],[/\bplants?\b/g,'plant'],[/\bnpp\b/g,'nuclear plant'],[/\b(signs|signed|signing|inks|inked)\b/g,'sign'],
+    [/\b(deal|pact|accord|agreement)s?\b/g,'agreement'],[/\b(polish|poland's|poland’s|poland)\b/g,''],[/\b(announces|announced|unveils)\b/g,'announce'],
+    [/\b(orders|ordered|ordering)\b/g,'order'],[/\b(places|placed|placing)\b/g,'place'],[/\b(plans|planned|planning)\b/g,'plan'],
+    [/\bjoint venture\b|\bshareholders?['’]? agreement\b|\bjv\b/g,'jointventure'],[/\bpolska grupa energetyczna\b/g,'pge'],[/\bpolskie elektrownie j[aą]drowe\b/g,'pej'],[/\bministry of energy\b/g,'energyministry']];
+  const STOP=new Set('the and for with from into onto over under that this these those has have had its their about after before will would could more than also first new on of in to a an by at as is are was were be been it his her our your country country’s'.split(' '));
+  const fp=t=>{ let x=' '+String(t||'').toLowerCase()+' '; SYN.forEach(([r,v])=>x=x.replace(r,v));
+    return new Set(x.replace(/[^a-z0-9ąćęłńóśźż ]/g,' ').split(/\s+/).filter(w=>w.length>2&&!STOP.has(w))); };
+  const J=(a,b)=>{let i=0;a.forEach(x=>{if(b.has(x))i++;});return [i/Math.max(1,a.size+b.size-i),i];};
+  const slug=s=>((s.links||[])[0]||{}).url? decodeURIComponent(String(s.links[0].url).split('/').filter(Boolean).pop()||'').replace(/[-_]/g,' ').replace(/\d+/g,' ') : '';
+  const heads=s=>[s.src_title,s.title,s.title_en,slug(s)].filter(Boolean);
+  function sameEvent(a,b){
+    if(!a.auto && !b.auto) return false;   /* curated items were de-duplicated by the analyst; R6/R7 screen live-feed items */
+    const d=Math.abs(new Date(a.date)-new Date(b.date))/86400000; if(d>3) return false;
+    if((a.sub==='RES'||b.sub==='RES') && !(a.cos||[]).some(c=>c!=='ALL'&&(b.cos||[]).includes(c))) return false;
+    for(const ha of heads(a)) for(const hb of heads(b)){ const [j,n]=J(fp(ha),fp(hb)); if(j>=0.5&&n>=3) return true; }
+    const [j2,n2]=J(fp(heads(a)[0]+' '+a.summary),fp(heads(b)[0]+' '+b.summary));
+    if(j2>=0.30 && n2>=4) return true;
+    /* R7 same named asset, same event type, ≤3 days (e.g. ZE PAK ESPI report vs WNN on the Pątnów SMR JV) */
+    const txt=x=>(x.title+' '+(x.summary||'')).toLowerCase();
+    const named=(x,y)=>(x.assets||[]).some(n=>{const k=n.toLowerCase().split(/\s+/)[0]; return k.length>3 && txt(y).includes(k);});
+    const sa=(a.assets||[]).filter(x=>(b.assets||[]).includes(x)).length || named(a,b) || named(b,a) ? [1] : [];
+    const sameTech=(a.tech||[]).some(t=>t!=='cross'&&(b.tech||[]).includes(t));
+    return sa.length>0 && sameTech && (a.sub===b.sub || j2>=0.15) && j2>=0.08;
+  }
+  window.__sameEvent=sameEvent;
+  const prevSame=window.__dupSame;   /* v73 rules R1–R5 */
+  const better=(x,y)=>{ const tx=tier(x),ty=tier(y); if(tx!==ty) return tx<ty;
+    if(!!x.auto!==!!y.auto) return !x.auto; return x.date<=y.date; };
+  const _dd=dedupe;
+  window.dedupe=dedupe=function(list){
+    const out=_dd(list);              /* v73 rules first */
+    const res=[];
+    out.forEach(s=>{
+      const i=res.findIndex(o=>sameEvent(o,s));
+      if(i<0){ res.push(s); return; }
+      const o=res[i], keep=better(s,o)?s:o, drop=keep===s?o:s;
+      const seen=new Set((keep.links||[]).map(l=>l.url));
+      (drop.links||[]).forEach(l=>{ if(!seen.has(l.url)){ (keep.links=keep.links||[]).push(Object.assign({},l,{label:(drop.publisher||'Also reported')+' — also reported'})); seen.add(l.url);} });
+      (window.dupLog||[]).push({kept:keep.publisher+': '+keep.title, removed:drop.publisher+': '+drop.title, rule:'R6 same event (tier '+tier(keep)+' kept over tier '+tier(drop)+')'});
+      res[i]=window.__finalize?__finalize(keep,drop):keep;
+    });
+    return res;
+  };
+  render();
+})();
+</script>
+<script>
+/* ═══ v75: free-access priority for duplicate MEDIA sources ═══
+   When the same event is reported by several media outlets, the version whose FULL article
+   can be read without a subscription or login is kept. Ranking used to pick the kept version:
+     1  Official / primary source (company, ministry, regulator, TSO, stock-exchange report)
+     2  Free media — specialist energy press   (e.g. WNN, NucNet, CEEnergyNews, ESS News, pv magazine)
+     3  Free media — general press             (e.g. Notes From Poland, Bankier, Polskie Radio)
+     4  Subscription / login media — specialist (e.g. Renewables Now, PAP Biznes, inspiratia)
+     5  Subscription / login media — general   (e.g. Reuters, MarketScreener)
+   Access is judged from the article's own link domain (PAYWALL list below — edit as needed).
+   If a free live-feed article replaces an analyst-checked item, the analyst's categorisation,
+   assets and summary are kept; only the headline, publisher and lead link switch to the free source.
+   Subscription links stay available as "also reported · subscription required". */
+(function(){
+  const PAYWALL=[
+    /(^|\.)renewablesnow\.com$/i,        /* subscription plans; most stories locked */
+    /(^|\.)biznes\.pap\.pl$/i,           /* PAP Biznes closed service (login) */
+    /(^|\.)inspiratia\.com$/i,           /* subscription / login */
+    /(^|\.)reuters\.com$/i,              /* registration/login wall */
+    /(^|\.)marketscreener\.com$/i,       /* premium articles */
+    /(^|\.)rivieramm\.com$/i,            /* login for full articles */
+    /(^|\.)ft\.com$/i, /(^|\.)bloomberg\.com$/i, /(^|\.)wsj\.com$/i, /(^|\.)montelnews\.com$/i, /(^|\.)argusmedia\.com$/i
+  ];
+  const PAYWALL_PATH=[/wysokienapiecie\.pl\/ole\//i];   /* WysokieNapiecie OLE section is paid; other articles free */
+  const host=u=>{ try{ return new URL(u).hostname.replace(/^www\./,''); }catch(e){ return ''; } };
+  const isPaid=u=>!!u && (PAYWALL.some(r=>r.test(host(u))) || PAYWALL_PATH.some(r=>r.test(u)));
+  window.isPaidLink=isPaid;
+  const lead=s=>((s.links||[])[0]||{}).url||'';
+  const baseTier=window.sourceTier;                  /* v74: 1 official · 2 specialist · 3 general */
+  window.sourceTier=function(s){
+    const t=baseTier(s); if(t===1) return 1;
+    return isPaid(lead(s)) ? t+2 : t;                /* 2/3 free media · 4/5 subscription media */
+  };
+  const tag=l=>isPaid(l.url)&&!/subscription required/.test(l.label||'') ? Object.assign({},l,{label:(l.label||'Source')+' · subscription required'}) : l;
+  window.__finalize=function(keep,drop){
+    let out=keep;
+    if(keep.auto && !drop.auto){                     /* free live article beats a subscription curated item */
+      out=Object.assign({}, drop, {title:keep.title, title_pl:keep.title_pl, src_title:keep.src_title,
+            publisher:keep.publisher, lang:keep.lang, translated:keep.translated, pl:keep.pl, date:drop.date<keep.date?drop.date:keep.date,
+            links:[...(keep.links||[]), ...(drop.links||[]).filter(l=>!(keep.links||[]).some(k=>k.url===l.url))]});
+    }
+    const L=(out.links||[]).map(tag), first=L.slice(0,1), rest=L.slice(1);
+    rest.sort((a,b)=>(isPaid(a.url)?1:0)-(isPaid(b.url)?1:0));   /* free "also reported" links first */
+    if(out===keep) keep.links=first.concat(rest); else out.links=first.concat(rest);
+    return out;
+  };
   render();
 })();
 </script>
