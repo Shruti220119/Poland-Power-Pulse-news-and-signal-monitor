@@ -36,7 +36,9 @@ jobs:
 
       - name: Fetch live items
         run: python scripts/feed_fetcher.py
-
+        env:
+          AZURE_TRANSLATOR_KEY: ${{ secrets.AZURE_TRANSLATOR_KEY }}
+          AZURE_TRANSLATOR_REGION: ${{ secrets.AZURE_TRANSLATOR_REGION }}
       - name: Save feed to repository
         run: |
           set +e
