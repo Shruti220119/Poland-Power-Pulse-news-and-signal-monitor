@@ -1,6 +1,25 @@
 {
- "updated": "2026-10-27T12:01:48+00:00",
+ "updated": "2026-10-27T13:19:49+00:00",
  "signals": [
+  {
+   "id": "live-e23c6b26f6",
+   "date": "2026-10-27",
+   "title": "PGE hosts groundbreaking for 400 MW project in Poland, Fluence supplying Smartstack BESS",
+   "summary": "Polish utility PGE has seen work begin at its Gryfino battery energy storage project, an 800 MWh capacity project located close to the German border. The project is near the town of Gryfino, just south of the major Polish border town of Szczecin, and near where the Oder river splits, with commercial operations scheduled to […] The post PGE hosts groundbreaking for 400 MW project in Poland, Fluence supplying Smartstack…",
+   "links": [
+    {
+     "label": "ESS News — article",
+     "url": "https://www.ess-news.com/2026/10/27/pge-hosts-groundbreaking-for-400-mw-project-in-poland-fluence-supplying-smartstack-bess/",
+     "type": "press"
+    }
+   ],
+   "cos": [
+    "PGE"
+   ],
+   "publisher": "ESS News",
+   "lang": "en",
+   "region": "National"
+  },
   {
    "id": "live-bf175469ef",
    "date": "2026-10-26",
