@@ -1,31 +1,29 @@
-"""Poland Power Pulse - live feed fetcher (stdlib only, no pip installs).
-Reads English and Polish RSS feeds, keeps Poland power-sector items, merges them into data/signals.json.
-A failing feed is skipped, so one broken source never fails the workflow.
+"""Poland Power Pulse - live feed fetcher v5 (stdlib only, no pip installs).
+Monitors ALL dashboard sources every run (the GitHub workflow runs it every 30 minutes):
+  A. 16 direct RSS feeds (publishers that offer an RSS feed)
+  B. Google News "site:" searches for every other publisher in the dashboard (company,
+     government, regulator, press, law-firm sites), grouped into a few batched queries
+Keeps Poland power-sector items, writes data/signals.json.
+A failing feed or query is skipped, so one broken source never fails the workflow.
 
 Guardrails
-  1. Scope      - headline must be inside the monitoring scope (see IN_SCOPE / OFF_SCOPE).
-  2. Duplicates - the same event reported by several sources is stored ONCE (see same_event()).
-  3. Priority   - the kept version is chosen by source_rank():
-                    1 official / primary source (company, ministry, regulator, TSO)
-                    2 free specialist energy press      3 free general press
-                    4 subscription specialist press     5 subscription general press
-                  then earliest report. Other sources are kept as "also reported" links.
-v4: + WysokieNapiecie.pl, CIRE (Energetyka, Ciepłownictwo), Energetyka24, offshoreWIND.biz,
-      Energy-Storage.News, NucNet
-    + Polish-language feeds: Polish scope keywords, lang "pl", optional translation to English
-      (set GitHub secrets AZURE_TRANSLATOR_KEY and AZURE_TRANSLATOR_REGION; without them the
-      original Polish headline is shown)
-    + complete summaries: feed boilerplate ("The post ... appeared first on", "[…]", "Read more")
-      removed, text cut at a full sentence, and a complete "change" sentence for the Signal Monitor"""
-import json, os, re, hashlib, html, urllib.request, xml.etree.ElementTree as ET
+  1. Scope      - headline must be inside the monitoring scope (IN_SCOPE / OFF_SCOPE).
+  2. Duplicates - the same event reported by several sources is stored ONCE (same_event()).
+  3. Priority   - kept version: 1 official · 2 free specialist · 3 free general ·
+                  4 subscription specialist · 5 subscription general, then earliest report.
+  4. Coverage   - the log lists every monitored publisher with items found this run.
+Optional translation of Polish items: GitHub secrets AZURE_TRANSLATOR_KEY / AZURE_TRANSLATOR_REGION."""
+import json, os, re, time, hashlib, html, urllib.request, xml.etree.ElementTree as ET
 from datetime import datetime, timezone, date
 from email.utils import parsedate_to_datetime
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, quote
 
 OUT = Path(__file__).resolve().parent.parent / "data" / "signals.json"
+UA = {"User-Agent": "Mozilla/5.0 (PolandPowerPulse feed bot)"}
+
+# ── A. DIRECT RSS FEEDS ─────────────────────────────────────────────────────
 FEEDS = {
-    # English
     "CEEnergyNews": "https://ceenergynews.com/feed/",
     "ESS News": "https://www.ess-news.com/feed/",
     "pv magazine": "https://www.pv-magazine.com/feed/",
@@ -37,29 +35,155 @@ FEEDS = {
     "Energy-Storage.News": "https://www.energy-storage.news/feed/",
     "NucNet": "https://www.nucnet.org/feed.rss",
     "Briefs Finance": "https://www.briefs.co/feed/",
-    "Briefs Finance (Google News)": "https://news.google.com/rss/search?q=site:briefs.co+(Poland+OR+Polish)"
-                                    "+(energy+OR+wind+OR+solar+OR+battery+OR+storage+OR+nuclear+OR+power)"
-                                    "&hl=en-US&gl=US&ceid=US:en",
-    # Polish
     "WysokieNapiecie.pl": "https://wysokienapiecie.pl/feed/",
     "CIRE": "https://www.cire.pl/rss/energetyka.xml",
     "CIRE Ciepłownictwo": "https://www.cire.pl/rss/cieplownictwo.xml",
     "Energetyka24": "https://energetyka24.com/_rss",
 }
-# Polish-language feeds: every item is about Poland, so the "mentions Poland" check is skipped
 POLISH_FEEDS = {"WysokieNapiecie.pl", "CIRE", "CIRE Ciepłownictwo", "Energetyka24"}
 
-POLAND = re.compile(r"\bpoland\b|\bpolish\b|\bpge\b|tauron|\benea\b|energa|orlen|ze pak|\bpse\b|\bure\b|baltica|bałtyk|baltyk|lubiatowo|warsaw", re.I)
+# ── SOURCE REGISTRY: every dashboard publisher → website, tier, language ────
+# tier: official | specialist | general ; feed: "rss" (section A) or a Google News group (section B)
+SOURCES = [
+    # name, site (for site: search), tier, lang, group
+    # Polish official — utilities, state bodies
+    ("PGE", "gkpge.pl", "official", "pl", "pl-official"),
+    ("ORLEN", "orlen.pl", "official", "pl", "pl-official"),
+    ("Energa", "energa.pl", "official", "pl", "pl-official"),
+    ("Enea", "enea.pl", "official", "pl", "pl-official"),
+    ("TAURON", "tauron.pl", "official", "pl", "pl-official"),
+    ("Polenergia", "polenergia.pl", "official", "pl", "pl-official"),
+    ("PEJ", "pej.pl", "official", "pl", "pl-official"),
+    ("Baltic Power", "balticpower.pl", "official", "pl", "pl-official"),
+    ("ENGIE Polska", "engie-polska.pl", "official", "pl", "pl-official2"),
+    ("Energa Storage", "energastorage.pl", "official", "pl", "pl-official2"),
+    ("Energa-Operator", "energa-operator.pl", "official", "pl", "pl-official2"),
+    ("VSB Energie Odnawialne Polska", "vsb.energy", "official", "pl", "pl-official2"),
+    ("URE", "ure.gov.pl", "official", "pl", "pl-gov"),
+    ("PSE", "pse.pl", "official", "pl", "pl-gov"),
+    ("Ministry of Energy", "gov.pl/web/energia", "official", "pl", "pl-gov"),
+    ("Ministry of Climate and Environment", "gov.pl/web/klimat", "official", "pl", "pl-gov"),
+    ("Polish Government", "gov.pl/web/aktywa-panstwowe", "official", "pl", "pl-gov"),
+    ("Chancellery of the Prime Minister (KPRM)", "gov.pl/web/premier", "official", "pl", "pl-gov"),
+    ("Polish Government", "gov.pl", "official", "pl", "fallback"),   # Google News often gives only "gov.pl" as source
+    # International official — companies, EU, lenders
+    ("RWE", "rwe.com", "official", "en", "int-official"),
+    ("Equinor", "equinor.com", "official", "en", "int-official"),
+    ("Ørsted", "orsted.com", "official", "en", "int-official"),
+    ("TotalEnergies", "totalenergies.com", "official", "en", "int-official"),
+    ("EDP Renewables", "edp.com", "official", "en", "int-official"),   # also covers "EDP" items
+    ("Fortum", "fortum.com", "official", "en", "int-official"),
+    ("Axpo", "axpo.com", "official", "en", "int-official"),
+    ("Westinghouse", "westinghousenuclear.com", "official", "en", "int-official"),
+    ("GE Vernova", "gevernova.com", "official", "en", "int-official2"),
+    ("Northland Power", "northlandpower.com", "official", "en", "int-official2"),
+    ("Ocean Winds", "oceanwinds.com", "official", "en", "int-official2"),
+    ("European Energy", "europeanenergy.com", "official", "en", "int-official2"),
+    ("Actis", "act.is", "official", "en", "int-official2"),
+    ("AtkinsRéalis", "atkinsrealis.com", "official", "en", "int-official2"),
+    ("Valmet", "valmet.com", "official", "en", "int-official2"),
+    ("Van Oord", "vanoord.com", "official", "en", "int-official2"),
+    ("KKR", "kkr.com", "official", "en", "int-official3"),
+    ("DRI", "dri-energy.com", "official", "en", "int-official3"),
+    ("Litgrid", "litgrid.eu", "official", "en", "int-official3"),
+    ("EIB", "eib.org", "official", "en", "int-official3"),
+    ("EXIM", "exim.gov", "official", "en", "int-official3"),
+    ("European Commission", "ec.europa.eu", "official", "en", "int-official3"),
+    ("EUR-Lex (Official Journal of the EU)", "eur-lex.europa.eu", "official", "en", "int-official3"),
+    ("Bankier.pl (ZE PAK ESPI report)", "bankier.pl", "general", "pl", "pl-press"),
+    # Polish press / associations
+    ("PAP Biznes", "biznes.pap.pl", "specialist", "pl", "pl-press"),
+    ("StrefaInwestorow.pl (PAP Biznes)", "strefainwestorow.pl", "specialist", "pl", "pl-press"),
+    ("wnp.pl", "wnp.pl", "specialist", "pl", "pl-press"),
+    ("Gramwzielone.pl", "gramwzielone.pl", "specialist", "pl", "pl-press"),
+    ("Polskie Radio", "polskieradio.pl", "general", "pl", "pl-press2"),
+    ("Radio Gdańsk", "radiogdansk.pl", "general", "pl", "pl-press2"),
+    ("Wodne Sprawy", "wodnesprawy.pl", "specialist", "pl", "pl-press2"),
+    ("PSME", "psme.org.pl", "specialist", "pl", "pl-press2"),
+    ("Forum Energii", "forum-energii.eu", "specialist", "pl", "pl-press2"),
+    ("CEO.com.pl", "ceo.com.pl", "general", "pl", "pl-press2"),
+    # International press
+    ("Reuters", "reuters.com", "general", "en", "int-press"),
+    ("MarketScreener", "marketscreener.com", "general", "en", "int-press"),
+    ("Euronews", "euronews.com", "general", "en", "int-press"),
+    ("Yahoo News", "yahoo.com", "general", "en", "int-press"),
+    ("Warsaw Business Journal", "wbj.pl", "general", "en", "int-press"),
+    ("Poland Insight", "polandinsight.com", "general", "en", "int-press"),
+    ("Poland-24", "poland-24.com", "general", "en", "int-press"),
+    ("UA.NEWS", "ua.news", "general", "en", "int-press"),
+    ("Clean Energy Wire", "cleanenergywire.org", "specialist", "en", "int-press2"),
+    ("Enlit World", "enlit.world", "specialist", "en", "int-press2"),
+    ("Riviera", "rivieramm.com", "specialist", "en", "int-press2"),
+    ("inspiratia", "inspiratia.com", "specialist", "en", "int-press2"),
+    ("Industry Alarm", "industryalarm.eu", "specialist", "en", "int-press2"),
+    ("Best Magazine", "bestmag.co.uk", "specialist", "en", "int-press2"),
+    ("Energy Drink (BiznesAlert)", "energydrink.today", "specialist", "en", "int-press2"),
+    ("Briefs Finance", "briefs.co", "general", "en", "int-press2"),
+    # Law firms
+    ("Dentons", "dentons.com", "general", "en", "int-law"),
+    ("CMS", "cms.law", "general", "en", "int-law"),
+    ("SSW", "ssw.solutions", "general", "en", "int-law"),
+    # Direct-RSS publishers (section A) — listed so ranking and coverage use one registry
+    ("CEEnergyNews", "ceenergynews.com", "specialist", "en", "rss"),
+    ("ESS News", "ess-news.com", "specialist", "en", "rss"),
+    ("pv magazine", "pv-magazine.com", "specialist", "en", "rss"),
+    ("Notes From Poland", "notesfrompoland.com", "general", "en", "rss"),
+    ("Baltic Wind", "balticwind.eu", "specialist", "en", "rss"),
+    ("Renewables Now", "renewablesnow.com", "specialist", "en", "rss"),
+    ("World Nuclear News", "world-nuclear-news.org", "specialist", "en", "rss"),
+    ("offshoreWIND.biz", "offshorewind.biz", "specialist", "en", "rss"),
+    ("Energy-Storage.News", "energy-storage.news", "specialist", "en", "rss"),
+    ("NucNet", "nucnet.org", "specialist", "en", "rss"),
+    ("WysokieNapiecie.pl", "wysokienapiecie.pl", "specialist", "pl", "rss"),
+    ("CIRE", "cire.pl", "specialist", "pl", "rss"),
+    ("Energetyka24", "energetyka24.com", "specialist", "pl", "rss"),
+]
+PAID = {"Renewables Now", "PAP Biznes", "inspiratia", "Reuters", "MarketScreener", "Riviera", "NucNet"}
+
+# ── B. GOOGLE NEWS GROUPS (one batched query per group, last 7 days) ────────
+KW_PL = '(energia OR energetyka OR elektrownia OR "magazyn energii" OR wiatrowa OR fotowoltaika OR jądrowa OR ciepłownia OR "rynek mocy" OR OZE)'
+KW_POLAND = "(Poland OR Polish OR Polska)"
+KW_EN = "(Poland OR Polish) (energy OR power OR wind OR solar OR battery OR storage OR nuclear OR gas OR coal OR grid OR heat)"
+GROUP_KW = {"pl-official": "", "pl-official2": "", "pl-gov": KW_PL, "int-official": KW_POLAND,
+            "int-official2": KW_POLAND, "int-official3": KW_POLAND, "pl-press": KW_PL, "pl-press2": KW_PL,
+            "int-press": KW_EN, "int-press2": KW_EN, "int-law": KW_EN}
+
+def gnews_url(sites, kw, lang):
+    q = "(" + " OR ".join("site:" + s for s in sites) + ")" + (" " + kw if kw else "") + " when:7d"
+    loc = "hl=pl&gl=PL&ceid=PL:pl" if lang == "pl" else "hl=en-GB&gl=GB&ceid=GB:en"
+    return "https://news.google.com/rss/search?q=" + quote(q) + "&" + loc
+
+def build_groups():
+    groups = {}
+    for name, site, tier, lang, g in SOURCES:
+        if g in ("rss", "fallback"):
+            continue
+        groups.setdefault(g, {"sites": [], "lang": lang})["sites"].append(site)
+    return {g: gnews_url(v["sites"], GROUP_KW.get(g, ""), v["lang"]) for g, v in groups.items()}
+
+def host(url):
+    return urlsplit(url or "").netloc.lower().removeprefix("www.")
+
+def lookup(url):
+    """Registry entry for a URL (longest matching site wins), else None."""
+    h, p = host(url), (urlsplit(url or "").path.lower() or "/")
+    best = None
+    for name, site, tier, lang, g in SOURCES:
+        s_host, _, s_path = site.partition("/")
+        if (h == s_host or h.endswith("." + s_host)) and p.startswith("/" + s_path if s_path else "/"):
+            if best is None or len(site) > len(best[1]):
+                best = (name, site, tier, lang, g)
+    return best
+
+# ── 1. SCOPE GUARDRAIL ──────────────────────────────────────────────────────
+POLAND = re.compile(r"\bpoland\b|\bpolish\b|\bpolsk|\bpge\b|tauron|\benea\b|energa|orlen|ze pak|\bpse\b|\bure\b|baltica|bałtyk|baltyk|lubiatowo|warsaw|warszaw", re.I)
 POWER = re.compile(r"power|energy|electric|grid|wind|solar|\bpv\b|batter|storage|bess|gas|ccgt|ocgt|nuclear|smr|coal|chp|heat|hydrogen|capacity|tariff|"
-                   r"energ|prąd|elektrown|elektrociepł|wiatr|fotowolt|magazyn|jądrow|atomow|węgl|ciepł|ciepl|gazow|sieci|aukcj|rynek mocy|rynku mocy|taryf|oze\b", re.I)
+                   r"energ|prąd|elektrown|elektrociepł|wiatr|fotowolt|magazyn|jądrow|atomow|węgl|ciepł|ciepl|gazow|sieci|aukcj|rynek mocy|rynku mocy|taryf|\boze\b", re.I)
 COS = {"PGE": r"\bpge\b", "ENEA": r"\benea\b", "ENERGA": r"energa", "ORLEN": r"orlen", "TAURON": r"tauron",
        "ZEPAK": r"ze pak", "PEJ": r"\bpej\b|polskie elektrownie j", "POLENERGIA": r"polenergia",
        "AXPO": r"\baxpo\b", "ENGIE": r"\bengie\b", "FORTUM": r"fortum", "EQUINOR": r"equinor",
        "ORSTED": r"ørsted|orsted", "RWE": r"\brwe\b", "TOTAL": r"totalenergies", "EDPR": r"\bedpr?\b",
        "IBERDROLA": r"iberdrola"}
-UA = {"User-Agent": "Mozilla/5.0 (PolandPowerPulse feed bot)"}
-
-# ── 1. SCOPE GUARDRAIL ──────────────────────────────────────────────────────
 INVESTORS = (r"pge|enea|energa|orlen|tauron|pej|pse|ure|ze pak|polenergia|synthos|osge|equinor|"
              r"ørsted|orsted|rwe|engie|axpo|fortum|edpr?|westinghouse|bechtel|ge vernova|"
              r"iberdrola|greenvolt|r\.power|dri|dtek|actis|northland|ocean winds|statkraft|qair|"
@@ -71,7 +195,6 @@ IN_SCOPE = re.compile(
     r"\bheat|\bchp\b|cogenerat|district heating|hydrogen|biomethane|"
     r"capacity market|capacity auction|\bcfd\b|contract for difference|renewabl|\bppa\b|tariff|"
     r"interconnect|transmission|substation|turbine|repower|"
-    # Polish
     r"prąd|elektrown|elektrociepł|wiatr|fotowolt|magazyn|jądrow|atomow|reaktor|węgl|"
     r"ciepł|ciepl|kogenera|gazow|wodór|wodor|biometan|sieci|przesył|dystrybuc|"
     r"rynek mocy|rynku mocy|aukcj|kontrakt(y|ów)? różnicow|taryf|\boze\b|odnawialn|"
@@ -86,46 +209,44 @@ OFF_SCOPE = re.compile(
     r"\bcrime\b|police|murder|court rul|"
     r"data cent(er|re) capacity|lng terminal project brings|cycle path|"
     r"fuel price|petrol|diesel|oil price|crude|"
-    # Polish
     r"wojsk|armi[ai]\b|zbrojeni|rakiet|wybor(y|ach|ów)\b|koalicj|felieton|komentarz:|opinia:|"
-    r"ceny paliw|stacj[ae] paliw|benzyn|olej napędow|ropa naftowa|ropy naftowej", re.I)
+    r"ceny paliw|stacj[ae] paliw|benzyn|olej napędow|ropa naftowa|ropy naftowej|"
+    r"sponsor|konkurs|wolontariat|kariera|rekrutacj|stypendi|piknik|festiwal|maraton", re.I)
 
 def in_scope(title):
     t = title or ""
     return bool(IN_SCOPE.search(t)) and not OFF_SCOPE.search(t)
 
-# ── 2. SOURCE PRIORITY (edit these lists as needed) ─────────────────────────
-OFFICIAL = re.compile(r"(^|\.)(gov\.pl|ure\.gov\.pl|pse\.pl|gkpge\.pl|enea\.pl|energa\.pl|orlen\.pl|tauron\.pl|"
-                      r"ppej\.pl|zepak\.com\.pl|polenergia\.pl|equinor\.com|orsted\.com|rwe\.com|westinghousenuclear\.com|"
-                      r"iberdrola\.com|iberdrola\.pl|europa\.eu|espi|gpw\.pl)$", re.I)
-SPECIALIST = re.compile(r"(^|\.)(world-nuclear-news\.org|nucnet\.org|renewablesnow\.com|ceenergynews\.com|ess-news\.com|"
-                        r"pv-magazine\.com|balticwind\.eu|energy-storage\.news|offshorewind\.biz|wysokienapiecie\.pl|"
-                        r"gramwzielone\.pl|cire\.pl|wnp\.pl|energetyka24\.com|biznes\.pap\.pl|reuters\.com|enerdata\.net|"
-                        r"inspiratia\.com|rivieramm\.com)$", re.I)
-PAYWALL = re.compile(r"(^|\.)(renewablesnow\.com|biznes\.pap\.pl|inspiratia\.com|reuters\.com|marketscreener\.com|"
-                     r"rivieramm\.com|nucnet\.org|ft\.com|bloomberg\.com|wsj\.com|montelnews\.com|argusmedia\.com)$", re.I)
-PAYWALL_PATH = re.compile(r"wysokienapiecie\.pl/ole/", re.I)        # paid section only
+# ── 2. SOURCE PRIORITY ──────────────────────────────────────────────────────
+PAYWALL_PATH = re.compile(r"wysokienapiecie\.pl/ole/", re.I)
 
-def host(url):
-    return urlsplit(url or "").netloc.lower().removeprefix("www.")
-
-def is_paid(url):
-    return bool(PAYWALL.search(host(url)) or PAYWALL_PATH.search(url or ""))
+def is_paid(item_or_url):
+    if isinstance(item_or_url, dict):
+        if item_or_url.get("publisher") in PAID:
+            return True
+        url = item_or_url.get("source_url") or item_or_url["links"][0]["url"]
+    else:
+        url = item_or_url
+        r = lookup(url)
+        if r and r[0] in PAID:
+            return True
+    return bool(PAYWALL_PATH.search(url or ""))
 
 def source_rank(item):
     """1 official · 2 free specialist · 3 free general · 4 paid specialist · 5 paid general"""
-    url = item.get("source_url") or item["links"][0]["url"]
-    h = host(url)
-    if OFFICIAL.search(h):
+    tier = item.get("tier")
+    if not tier:
+        r = lookup(item.get("source_url") or item["links"][0]["url"])
+        tier = r[2] if r else "general"
+    if tier == "official":
         return 1
-    base = 2 if SPECIALIST.search(h) else 3
-    return base + 2 if is_paid(url) else base
+    base = 2 if tier == "specialist" else 3
+    return base + 2 if is_paid(item) else base
 
 # ── 3. TRANSLATION (optional, Azure AI Translator) ──────────────────────────
 TR_KEY, TR_REGION = os.environ.get("AZURE_TRANSLATOR_KEY", ""), os.environ.get("AZURE_TRANSLATOR_REGION", "")
 
 def translate(texts):
-    """Polish -> English. Returns None if no key is set or the call fails."""
     if not TR_KEY or not texts:
         return None
     try:
@@ -187,7 +308,7 @@ def same_event(a, b):
         return ""
     if canon(a["links"][0]["url"]) == canon(b["links"][0]["url"]):
         return "R1 same article URL"
-    wa, wb = words(a["title"]), words(b["title"])          # English (translated) headlines when available
+    wa, wb = words(a["title"]), words(b["title"])
     j, n = jacc(wa, wb)
     if j >= 0.6:
         return "R2 near-identical headline"
@@ -217,10 +338,10 @@ def merge(keep, drop):
     seen = {canon(l["url"]) for l in keep["links"]}
     for l in drop["links"]:
         if canon(l["url"]) not in seen:
-            label = f'{drop["publisher"]} — also reported' + (" · subscription required" if is_paid(l["url"]) else "")
+            label = f'{drop["publisher"]} — also reported' + (" · subscription required" if is_paid(drop) else "")
             keep["links"].append({**l, "label": label})
             seen.add(canon(l["url"]))
-    keep["links"] = keep["links"][:1] + sorted(keep["links"][1:], key=lambda l: is_paid(l["url"]))
+    keep["links"] = keep["links"][:1] + sorted(keep["links"][1:], key=lambda l: "subscription" in l.get("label", ""))
     keep["date"] = min(keep["date"], drop["date"])
     return keep
 
@@ -238,17 +359,16 @@ def dedupe(items):
             out.append(s)
     return out
 
-# ── 5. TEXT CLEAN-UP (complete headlines and summaries) ─────────────────────
+# ── 5. TEXT CLEAN-UP ────────────────────────────────────────────────────────
 BOILER = re.compile(r"(the post .{3,300}? appeared first on .{2,80}?\.?\s*$)|"
                     r"(\[\s*(…|\.\.\.|&hellip;)\s*\])|(\b(read more|continue reading|czytaj (więcej|dalej))\b.*$)", re.I)
 
 def clean(t):
-    t = html.unescape(html.unescape(re.sub(r"<[^>]+>", " ", t or "")))   # double-encoded entities too
+    t = html.unescape(html.unescape(re.sub(r"<[^>]+>", " ", t or "")))
     return re.sub(r"\s+", " ", t).strip()
 
 def tidy(desc, max_words=60):
-    """Remove feed boilerplate and end the summary at a complete sentence."""
-    d = BOILER.sub("", clean(desc)).strip(" .…") 
+    d = BOILER.sub("", clean(desc)).strip(" .…")
     if not d:
         return ""
     sents = re.split(r"(?<=[.!?])\s+(?=[A-ZĄĆĘŁŃÓŚŹŻ0-9\"„])", d + ".")
@@ -259,12 +379,11 @@ def tidy(desc, max_words=60):
             break
         out.append(s); n += w
     text = " ".join(out).strip()
-    if len(text.split()) > max_words:                     # one very long sentence: cut at a word boundary
+    if len(text.split()) > max_words:
         text = " ".join(text.split()[:max_words]).rstrip(",;:") + "…"
     return re.sub(r"\.\.$", ".", text)
 
 def change_line(title, summary):
-    """A complete 'what changed' sentence for the Signal Monitor (first sentence, else the headline)."""
     first = re.split(r"(?<=[.!?])\s+", summary or "")[0] if summary else ""
     return first if first and first.endswith((".", "!", "?")) and 6 <= len(first.split()) <= 35 else title
 
@@ -275,58 +394,66 @@ def parse_date(s):
         return s[:10] if re.match(r"\d{4}-\d{2}-\d{2}", s or "") else None
 
 # ── FETCH ───────────────────────────────────────────────────────────────────
-def fetch(name, url):
+def fetch(name, url, google=False, polish_feed=False):
     req = urllib.request.Request(url, headers=UA)
     with urllib.request.urlopen(req, timeout=25) as r:
         root = ET.fromstring(r.read())
-    google, polish = "news.google.com" in url, name in POLISH_FEEDS
     out, dropped = [], 0
     for it in root.iter("item"):
         title = clean(it.findtext("title"))
         link = (it.findtext("link") or "").strip()
         desc = clean(it.findtext("description"))
         date_ = parse_date(it.findtext("pubDate") or "")
-        publisher, source_url = name, ""
+        publisher, source_url, tier, lang = name, "", None, "pl" if polish_feed else "en"
         if google:
             src = it.find("source")
-            if src is not None:
-                publisher = clean(src.text) or name.replace(" (Google News)", "")
-                source_url = src.get("url", "")
-                title = re.sub(r"\s+-\s+" + re.escape(src.text or "") + r"\s*$", "", title)
+            src_name = clean(src.text) if src is not None else ""
+            source_url = src.get("url", "") if src is not None else ""
+            if src_name:
+                title = re.sub(r"\s+-\s+" + re.escape(src_name) + r"\s*$", "", title)
+            reg = lookup(source_url)
+            if not reg:                                   # result from a site we do not monitor
+                continue
+            publisher, _, tier, lang, _ = reg
             desc = "" if desc.startswith(title) else desc
+        else:
+            reg = lookup(link)
+            if reg:
+                tier = reg[2]
         if not (title and link and date_) or date_ < "2024-01-01":
             continue
         hay = f"{title} {desc}"
-        if not ((polish or POLAND.search(hay)) and (POWER.search(hay) or IN_SCOPE.search(title))):
+        local = lang == "pl"                              # Polish sources are about Poland by definition
+        if not ((local or POLAND.search(hay)) and (POWER.search(hay) or IN_SCOPE.search(title))):
             continue
         if not in_scope(title):
             dropped += 1
-            print(f"  OUT-OF-SCOPE ({name}): {title[:90]}")
+            print(f"  OUT-OF-SCOPE ({publisher}): {title[:90]}")
             continue
         cos = [k for k, rx in COS.items() if re.search(rx, hay, re.I)] or ["ALL"]
-        summary = tidy(desc)
-        rank_url = source_url or link
         item = {
             "id": "live-" + hashlib.md5(canon(link).encode()).hexdigest()[:10],
-            "date": date_, "title": title,                       # exact source headline, never shortened
-            "summary": summary,
-            "links": [{"label": f"{publisher} — article" + (" · subscription required" if is_paid(rank_url) else ""),
-                       "url": link, "type": "press"}],
-            "source_url": source_url,
-            "cos": cos, "publisher": publisher, "lang": "pl" if polish else "en", "region": "National",
+            "date": date_, "title": title,
+            "summary": tidy(desc),
+            "links": [{"label": f"{publisher} — article", "url": link,
+                       "type": "official" if tier == "official" else "press"}],
+            "source_url": source_url, "tier": tier,
+            "cos": cos, "publisher": publisher, "lang": lang, "region": "National",
         }
+        if is_paid(item):
+            item["links"][0]["label"] += " · subscription required"
         out.append(item)
     return out, dropped
 
 def add_translation(item, old):
-    """Polish items: keep original headline in title_pl, English in title (reuses earlier translation)."""
     if item["lang"] != "pl":
         item["change"] = change_line(item["title"], item["summary"])
         return item
     prev = old.get(item["id"])
     if prev and prev.get("translated"):
         for k in ("title", "title_pl", "summary", "change", "translated"):
-            item[k] = prev[k]
+            if k in prev:
+                item[k] = prev[k]
         return item
     res = translate([item["title"], item["summary"]] if item["summary"] else [item["title"]])
     if res:
@@ -344,18 +471,23 @@ def main():
             old = {s["id"]: s for s in json.loads(OUT.read_text(encoding="utf-8")).get("signals", [])}
         except Exception:
             old = {}
-    store = dict(old)
-    print("Translation:", "Azure AI Translator" if TR_KEY else "OFF (no AZURE_TRANSLATOR_KEY) - Polish headlines kept in Polish")
-    for name, url in FEEDS.items():
+    store, found = dict(old), {}
+    print("Translation:", "Azure AI Translator" if TR_KEY else "OFF (no AZURE_TRANSLATOR_KEY) - Polish items hidden on dashboard")
+    jobs = [(n, u, False, n in POLISH_FEEDS) for n, u in FEEDS.items()] + \
+           [(f"Google News · {g}", u, True, False) for g, u in build_groups().items()]
+    for name, url, google, pl in jobs:
         try:
-            items, dropped = fetch(name, url)
+            items, dropped = fetch(name, url, google, pl)
             for s in items:
                 store[s["id"]] = add_translation(s, old)
-            print(f"OK   {name}: {len(items)} Poland items ({dropped} out of scope)")
+                found[s["publisher"]] = found.get(s["publisher"], 0) + 1
+            print(f"OK   {name}: {len(items)} items ({dropped} out of scope)")
         except Exception as e:
             print(f"SKIP {name}: {e}")
+        if google:
+            time.sleep(2)                                  # be polite to Google News
     kept = [s for s in store.values() if in_scope(s.get("title_pl") or s.get("title", ""))]
-    for s in kept:                                          # repair items saved by older versions
+    for s in kept:
         s["summary"] = tidy(s.get("summary", "")) if s.get("summary") else ""
         if not s.get("change") or s["change"].endswith("…"):
             s["change"] = change_line(s["title"], s["summary"])
@@ -363,10 +495,15 @@ def main():
     before = len(kept)
     kept = dedupe(kept)
     print(f"Duplicate clean-up: merged {before - len(kept)} duplicate items")
-    sigs = sorted(kept, key=lambda s: s["date"], reverse=True)[:400]
+    names = sorted({n for n, *_ in SOURCES})
+    print(f"Coverage: {len(names)} sources monitored · {len(found)} returned in-scope items this run")
+    for n in names:
+        print(f"  {'✓' if n in found else '·'} {n}: {found.get(n, 0)}")
+    sigs = sorted(kept, key=lambda s: s["date"], reverse=True)[:600]
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps({"updated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                               "signals": sigs}, ensure_ascii=False, indent=1), encoding="utf-8")
+                               "sources_monitored": len(names), "signals": sigs},
+                              ensure_ascii=False, indent=1), encoding="utf-8")
     print(f"Wrote {len(sigs)} live items to {OUT}")
 
 if __name__ == "__main__":
