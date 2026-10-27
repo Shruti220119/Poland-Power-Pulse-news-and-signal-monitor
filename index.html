@@ -1730,10 +1730,8 @@ document.addEventListener('keydown', e=>{ if(e.key==='Escape') nl('srcOverlay').
   const tidy = t => String(t || '').replace(/\s+[|–—-]\s+[^|–—-]{2,40}$/, '').replace(/^["'„“]+|["'”]+$/g, '').trim();
   function liveSignalTitle(s) {
     const co = (s.cos || []).filter(c => c !== 'ALL' && c !== 'OTHER').map(coLabel)[0];
-    let t = tidy(s.title); const w = t.split(/\s+/);
-    if (w.length > 14) t = w.slice(0, 14).join(' ') + '…';
-    if (co && !t.toLowerCase().startsWith(co.toLowerCase())) t = co + ': ' + t;
-    return t;
+    /* v77: full publisher headline — no 14-word cut, no company prefix, nothing removed after a dash */
+    return String(s.title || s.src_title || '').trim();
   }
   function firstWorkingLink(s) {
     const l = (s.links || []).find(x => !BAD.has(x.url)) || (s.links || [])[0];
@@ -2992,7 +2990,7 @@ render();
    about an off-scope topic (history, war, politics, defence, opinion, society, sport).
    Applies to News Feed, Signal Monitor and Newsletter. Curated items are unaffected. */
 (function(){
-  const IN=/energ|electric|power (plant|station|market|grid|sector|price|generation|purchase)|\bgrid\b|\bwind\b|wind farm|offshore|onshore|solar|\bpv\b|photovolt|batter|storage|\bbess\b|nuclear|\bsmr\b|reactor|\bgas\b|\blng\b|ccgt|ocgt|peaker|\bcoal\b|lignite|\bheat|\bchp\b|cogenerat|hydrogen|biomethane|capacity market|capacity auction|\bcfd\b|renewabl|\bppa\b|tariff|interconnect|transmission|substation|turbine|prąd|wiatr|słoneczn|fotowolt|magazyn|jądrow|atomow|węgl|ciepł|ciepl|sieci|gazow|\b(pge|enea|energa|orlen|tauron|pej|pse|ure|ze pak|polenergia|synthos|osge|equinor|ørsted|orsted|rwe|engie|axpo|fortum|edpr|westinghouse|bechtel|ge vernova)\b/i;
+  const IN=/energ|electric|power (plant|station|market|grid|sector|price|generation|purchase)|\bgrid\b|\bwind\b|wind farm|offshore|onshore|solar|\bpv\b|photovolt|batter|storage|\bbess\b|nuclear|\bsmr\b|reactor|\bgas\b|\blng\b|ccgt|ocgt|peaker|\bcoal\b|lignite|\bheat|\bchp\b|cogenerat|hydrogen|biomethane|capacity market|capacity auction|\bcfd\b|renewabl|\bppa\b|tariff|interconnect|transmission|substation|turbine|prąd|wiatr|słoneczn|fotowolt|magazyn|jądrow|atomow|węgl|ciepł|ciepl|sieci|gazow|\b(pge|enea|energa|orlen|tauron|pej|pse|ure|ze pak|polenergia|synthos|osge|equinor|ørsted|orsted|rwe|engie|axpo|fortum|edpr|westinghouse|bechtel|ge vernova)\b|iberdrola|greenvolt|r\.power|\bdri\b|dtek|actis|northland|ocean winds|statkraft|qair|enefit|\bcez\b|čez|e\.on|vattenfall|totalenergies|baltic power|electrum|photon energy/i;
   const OUT=/\bwwii\b|world war|second world war|nazi|holocaust|reparation|compensation .*victims|\bvictims\b|\[opinion\]|\bopinion\b|\bop-ed\b|\bnato\b|military|\barmy\b|apache|missile|defen[cs]e (minister|spending|industry)|security forum|ready to fight|coalition partner|quits .*government|\belection\b|\bpresidential (race|campaign)\b|migra|refugee|football|\bsport|olympic|museum|exhibition|\bfilm\b|church|abortion|court rul|\bcrime\b|police|murder|weather forecast/i;
   const head=s=>(s.title||'')+' '+(s.title_pl||'')+' '+(s.src_title||'');
   const offScope=s=>{ if(!s||!s.auto) return false; const h=head(s); return OUT.test(h) || !IN.test(h); };
@@ -3302,6 +3300,73 @@ window.SIG_EXCLUDE=new Set(['ic9']); /* EDF "not withdrawing" — no change, not
     if(out===keep) keep.links=first.concat(rest); else out.links=first.concat(rest);
     return out;
   };
+  render();
+})();
+</script>
+<script>
+/* ═══ v76: complete headlines in the Signal Monitor ═══
+   Live-feed items were given a shortened Signal Monitor headline (cut to 14 words with "…",
+   text after a dash removed, company name prefixed). They now show the full publisher headline.
+   Any remaining headline or "What changed" line ending in "…" is replaced with the full text. */
+(function(){
+  const cut=t=>/(…|\.\.\.)\s*$/.test(t||'');
+  function fix(s){
+    if(!s) return;
+    if(s.auto){ const h=s.title||s.src_title||''; if(h) s.sig_title=h; }
+    else if(cut(s.sig_title)) s.sig_title=s.title;
+    if(cut(s.change)){
+      const first=String(s.summary||'').split(/(?<=[.!?])\s+/)[0]||'';
+      s.change=(first && /[.!?]$/.test(first) && first.split(/\s+/).length<=35)?first:(s.title||s.change);
+    }
+  }
+  const _r=render;
+  render=function(){ (SIGNALS||[]).forEach(fix); _r(); };
+  render();
+})();
+</script>
+<script>
+/* ═══ v78: Iberdrola story + investor names in the live-feed scope filter ═══
+   The v68 live-feed scope filter only accepted headlines with an energy word or a listed Polish
+   company, so "Iberdrola weighs sale of its Polish operations" was hidden even after the script saved it.
+   Investor/developer names (Iberdrola, Greenvolt, R.Power, DTEK, Statkraft …) now count as in scope,
+   Iberdrola is a company filter option, and the 26 Oct story is added to the feed. */
+(function(){
+  CO.IBERDROLA={c:'#5c9e31',label:'Iberdrola'};
+  const ID='ib1';
+  if(!SIGNALS.some(s=>s.id===ID)){
+    CLS[ID]={sub:'MA',tech:['onshore','bess']};
+    const x=normalise({id:ID,date:'2026-10-26',cos:['IBERDROLA'],region:'National',
+      title:'Iberdrola weighs sale of its Polish operations',publisher:'Briefs Finance',
+      links:[{label:'Briefs Finance — article',url:'https://www.briefs.co/news/iberdrola-weighs-sale-of-its-polish-operations/',type:'press'}],
+      unit:'Iberdrola — Polish portfolio (213 MW onshore wind, ~1 GW BESS pipeline)',
+      change:'Iberdrola reviews a full exit from Poland; portfolio valued at up to €400m',
+      summary:'Iberdrola is exploring a sale of all its Polish assets and has hired advisers, according to people familiar with the matter. The portfolio — five onshore wind farms totalling 213 MW and a 1 GW battery storage development pipeline — could be valued at up to €400m. The review is at an early stage.'});
+    SEED.push(x); SIGNALS.push(x);
+  }
+  SIGNALS.forEach(s=>{ if(s.auto && /iberdrola/i.test(s.title||'') && !s.cos.includes('IBERDROLA')){ s.cos=['IBERDROLA'].concat(s.cos.filter(c=>c!=='ALL')); s.co=s.cos[0]; } });
+  render();
+})();
+</script>
+<script>
+/* ═══ v79: ARP "Ready for Offshore" story pinned in the dashboard ═══
+   The story came only from the live feed, so it disappeared whenever it was no longer in
+   data/signals.json. It is now a fixed item (exact Baltic Wind headline and link); if the live
+   feed also has it, the duplicate check merges the two (same article link). */
+(function(){
+  const ID='arp1';
+  if(!SIGNALS.some(s=>s.id===ID)){
+    CLS[ID]={sub:'SUP',tech:['offshore']};
+    ASSET_FIX[ID]=[];
+    const x=normalise({id:ID,date:'2026-10-02',cos:['PGE','ORLEN'],region:'Pomerania',
+      title:'Poland’s ARP launches ‘Ready for Offshore’ programme with up to PLN 100 million in financing for supply-chain firms',
+      publisher:'Baltic Wind',
+      links:[{label:'Baltic Wind — article',url:'https://balticwind.eu/polands-arp-launches-ready-for-offshore-programme-with-up-to-pln-100-million-in-financing-for-supply-chain-firms/',type:'press'},
+             {label:'ORLEN Neptun — press release',url:'https://neptun.orlen.pl/en/Media/News/2026/Ready-for-Offshore-programme-to-equip-Polish-companies-seeking-to-enter-the-offshore-wind-sector-training-competence-development-and-financing-of-up-to-PLN-100-million',type:'company'}],
+      unit:'Offshore wind supply chain — “Ready for Offshore” (ARP, PARP, PGE Baltica, ORLEN Neptun)',
+      change:'ARP opens up to PLN 100m of financing and subsidised training for offshore wind suppliers',
+      summary:'State agency ARP launched “Ready for Offshore” with PARP and offshore developers PGE Baltica and ORLEN Neptun. It combines subsidised training in eight supplier competences with up to PLN 100m of ARP financing — investment and development loans, including InvestEU-backed loans, and leasing — to help Polish firms win Baltic offshore wind contracts.'});
+    SEED.push(x); SIGNALS.push(x);
+  }
   render();
 })();
 </script>
