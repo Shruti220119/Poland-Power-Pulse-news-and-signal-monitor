@@ -3039,4 +3039,51 @@ render();
   render();
 })();
 </script>
+<style>
+/* v70: no "LIVE" label on news items (News Feed, Signal Monitor, rail) */
+.pill.livep{display:none!important}
+</style>
+<script>
+/* v70: strip any remaining "LIVE" tags from rendered items */
+(function(){
+  const strip=()=>document.querySelectorAll('#view .pill.livep').forEach(e=>e.remove());
+  const _r=render; render=function(){ _r(); strip(); };
+  render();
+})();
+</script>
+<script>
+/* v71: live-feed classification fix.
+   Live items are now classified from the HEADLINE first (the summary is only a fallback),
+   and sale/disposal wording (sell, sells, sold, selling, offload, dispose) counts as an
+   acquisition/divestment. Previously "Greenvolt sells off..." fell through to
+   "Construction Progress" because its summary mentioned "completing construction".
+   Live items also get a real "What changed" line instead of the category name. */
+(function(){
+  const RULES=[
+    ['SET',/delay|postpone|cancel|withdraw|terminat|suspend|halt|curtail|opóźni|anulow|wycof/i],
+    ['MA',/\b(sells?|selling|sold|sale|offload\w*|dispos\w*|divest\w*|acqui\w*|buys?|bought|takeover|takes over|stake|merger|buy-?out|squeeze-?out)\b|przejęc|sprzeda/i],
+    ['FIN',/\bfid\b|final investment|financ\w*|loan|financial close|bond|kredyt|finansow/i],
+    ['SUP',/\bcfd\b|subsid|grant|co-financ|state aid|support scheme|dotacj|wsparci/i],
+    ['CAP',/capacity market|capacity auction|auction|aukcj|rynek mocy|rynku mocy/i],
+    ['LIC',/licen[cs]e|permit|environmental decision|pozwoleni|koncesj/i],
+    ['SCH',/contract|\bepc\b|supplier|supply deal|order|tender|contractor|wykonawc/i],
+    ['CON',/construction|commission|first power|installation|foundation|earthwork|energis|online|budow|rozruch/i]
+  ];
+  function relabel(s){
+    if(!s||!s.auto||s._rc) return; s._rc=true;
+    const t=(s.title||'')+' '+(s.title_pl||'');
+    let r=RULES.find(([,rx])=>rx.test(t));
+    if(!r) r=RULES.find(([,rx])=>rx.test(s.summary||''));
+    if(r && SC[r[0]]){ s.sub=r[0]; s.cat=SC[r[0]].cat; s.cats=[s.cat,s.sub]; }
+    if(!s.change || s.change===catLabel(s.cat) || /^[A-Z][\w ,&]+$/.test(s.change)&&SC[Object.keys(SC).find(k=>SC[k].label===s.change)]){
+      const first=String(s.summary||'').split(/(?<=[.!?])\s+/)[0]||'';
+      s.change=(first && first.split(/\s+/).length<=30)?first:(s.title||'');
+    }
+    s._d=null;
+  }
+  const fixAll=()=>{ (SIGNALS||[]).forEach(relabel); };
+  const _r=render; render=function(){ fixAll(); _r(); };
+  render();
+})();
+</script>
 </body></html>
