@@ -1794,7 +1794,7 @@ document.addEventListener('keydown', e=>{ if(e.key==='Escape') nl('srcOverlay').
     return `<article class="card" style="--pc:${SC[s.cat].col}">
       <div class="c-top">${catPills(s)}${s.auto ? '<span class="pill livep">● LIVE</span>' : ''}${s.pl ? '<span class="pill trp">PL → EN</span>' : ''}
         <span class="c-date">${fmtDate(s.date)} · ${ago(s.date)}</span></div>
-      <h3>${esc(s.sig_title)}</h3>
+      <h3>${esc(s.hl_fix||s.sig_title)}</h3>
       ${full && !s.auto && (s.change || s.why) ? `<div class="cw">
         ${s.change ? `<div class="sg chg"><label>What changed</label><b>${esc(s.change)}</b></div>` : ''}
         ${s.why ? `<div class="sg why"><label>Why it matters</label><p>${esc(s.why)}</p></div>` : ''}
@@ -2358,11 +2358,21 @@ render();
 .si-sort button.on{background:var(--purple);color:#fff;border-color:var(--purple)}
 </style>
 <script>
+/* v81: Policy & Market Design — analyst stage overrides and exclusions */
+window.POL_STAGE_FIX={x1:'RULE',x7:'RULE',h33:'RULE',x6:'SUPP',r5:'SUPP',u6:'SUPP',u10:'SUPP',rg7:'SUPP',rg8:'SUPP',
+ r1:'LAW',r2:'LAW',r8:'LAW',n13:'LAW',u4:'LAW',a1:'LAW',a2:'LAW',rg1:'LAW',rg2:'LAW',rg3:'LAW',rg5:'LAW',v3:'LAW',v5:'LAW',
+ r3:'PROP',r6:'PROP',r7:'PROP',h2:'PROP',h4:'PROP',h23:'PROP',rg4:'PROP',rg6:'PROP',rg9:'PROP',v4:'PROP'};
+/* national policy items kept although a company/asset tag exists; company- or project-specific items removed */
+window.POL_INCLUDE=new Set(['u4','rg1']);
+window.POL_EXCLUDE=new Set(['e3','w4','w5','n14','h27','u11','h24','n15','o3','x4','a4','h8','h10','h30']);
+</script>
+<script>
 /* v40: retain News Feed; replace Signal Monitor with one primary trigger only. */
 (function(){
   const BUILD_PRIMARY='Generation & Storage Build-Out';
   /* v59: primary signal registry — add future primary signals here; each appears in the Signal Type dropdown */
-  const PRIMARY_SIGNALS=[{id:'GSB',label:BUILD_PRIMARY}];
+  const POLICY_PRIMARY='Policy & Market Design';
+  const PRIMARY_SIGNALS=[{id:'GSB',label:BUILD_PRIMARY},{id:'PMD',label:POLICY_PRIMARY}];
   let curPrimary='GSB';
   const BUILD_SUBS=[
     ['PLAN','Plans & Announcements','#5f5866'],['PERM','Permitting & Licensing','#3b5bdb'],
@@ -2428,6 +2438,73 @@ render();
     const h=((s.title||'')+' '+(s.change||'')+' '+(s.summary||'')).toLowerCase();
     return /(build|construction|commission|first power|install|foundation|turbine|battery|storage|bess|wind|solar|nuclear|smr|ccgt|ocgt|gas-fired|chp|heat source|biomass|hydro|fid|financ|contract|tender|procure|acqui|auction|support|permit|licen|project|capacity)/i.test(h);
   }
+  /* ═══ v81: second primary signal — Policy & Market Design (lifecycle sub-categories) ═══ */
+  const POL_SUBS=[
+    ['PROP','Proposals & Consultations','#5f5866'],
+    ['LAW','Legislation & Adoption','#3b5bdb'],
+    ['RULE','Market Rules & Regulation','#0b7285'],
+    ['SUPP','Support Schemes & Auctions','#7a3fa0']
+  ];
+  const PMAP=Object.fromEntries(POL_SUBS.map(x=>[x[0],{label:x[1],col:x[2]}]));
+  const ROUNDUP=/\b(weekly|monthly|daily|quarterly)\s+(summary|review|round-?up|digest|briefing|update|recap)\b|\b(news|market|energy)\s+(round-?up|digest|recap)\b|\bweek in (review|energy)\b|\bthis week in\b|przegl[aą]d\s+(tygodnia|miesi[aą]ca|wydarze[nń])|podsumowanie\s+(tygodnia|miesi[aą]ca)/i;
+  const FINRES=/\b(q[1-4]|h[12]|fy)\s?20\d\d\b|financial (and operating )?results|periodic report|consolidated report|net profit|ebitda/i;
+  function polText(s){return ((s.title||'')+' '+(s.title_pl||'')+' '+(s.change||'')+' '+(s.summary||'')).toLowerCase();}
+  function polSub(s){
+    if(window.POL_STAGE_FIX&&POL_STAGE_FIX[s.id]) return POL_STAGE_FIX[s.id];
+    const h=((s.title||'')+' '+(s.title_pl||'')+' '+(s.change||'')).toLowerCase();
+    if(/state aid|grant|subsid|co-financ|funding|recovery plan|\brrf\b|kpo|nfoś|support (scheme|system|programme|mechanism)|auction|aukcj|\bcfd\b|contract for difference/.test(h)) return 'SUPP';
+    if(/\bdraft\b|consultation|proposal|proposes|plans? |work schedule|strategy|overhaul|reform plan/.test(h)) return 'PROP';
+    if(/\bure\b|\bpse\b|regulator|tariff|grid code|balancing|rules update|karta aktualizacji|capacity (market|mechanism)|flexibilit|terms and conditions|connection rules/.test(h)||['TAR','GRID','FLEX','CAP'].includes(s.sub)) return 'RULE';
+    if(/\b(sejm|senate|senat|parliament|passes|passed|adopt(s|ed)?|signs?|signed|council of ministers|cabinet|in force|takes effect|enters? into force|vote|uchwali|przyj[aą]ł|podpisa)\b/.test(h)) return 'LAW';
+    return 'PROP';
+  }
+  const POL_COMPANY=/\b(pge|enea|energa|tauron|orlen|pej|polenergia|zepak|ze pak|kghm|pse operator|baltic power|baltica|neptun|equinor|rwe|edf|edp|iberdrola|totalenergies|northland|greenvolt|westinghouse|bechtel|ansaldo|ge vernova|siemens|mitsubishi|elektrotim)\b/i;
+  function isPolicySignal(s){
+    if(window.SIG_EXCLUDE&&SIG_EXCLUDE.has(s.id)) return false;
+    if(window.POL_EXCLUDE&&POL_EXCLUDE.has(s.id)) return false;
+    const head=(s.title||'')+' '+(s.title_pl||'');
+    const forced=window.POL_INCLUDE&&POL_INCLUDE.has(s.id);
+    if(!forced){
+      if(ROUNDUP.test(head)) return false;          /* digests stay in the News Feed only */
+      if(FINRES.test(head)) return false;           /* company results are not policy signals */
+      if(isBuildSignal(s)) return false;            /* project / build-out news belongs to the other signal */
+      const cos=(s.cos_headline||s.cos||[]).filter(c=>c!=='ALL'&&c!=='OTHER');   /* live items: companies in the headline only */
+      if(cos.length||(s.assets||[]).length) return false;   /* company- or asset-specific → not a policy signal */
+      if(POL_COMPANY.test(head+' '+(s.change||''))) return false;
+      if(['LEAD','RES','STR','SCH','ANN','MOU','CON','FIN','MA','SET','ADQ','GRID'].includes(s.sub)) return false;
+    }
+    if(forced) return true;
+    if(['LEG','SUP','TAR','CAP','FLEX'].includes(s.sub)) return true;
+    return /\b(law|bill|act|amendment|regulation|ordinance|deregulat\w*|state aid|capacity market|cfd|contract for difference|market reform|energy policy|consultation|tariff|support scheme)\b|ustaw|rozporz[aą]dz/.test(polText(s));
+  }
+  const POL_EVENT={PROP:'Draft / proposal / consultation',LAW:'Legislative step or adoption',RULE:'Market rule or regulatory change',SUPP:'Support scheme, auction or state aid'};
+  const POL_TOPIC=[['Capacity market',/capacity market|rynek mocy|rynku mocy|\brrm\b/],['CfD / offshore support',/\bcfd\b|contract for difference|offshore/],['Electricity-market reform',/market reform|balancing|flexib|tge|exchange|data hub|csire/],['Nuclear framework',/nuclear|smr|pej|atom/],['Grid connections',/grid connection|connection|przył/],['Storage regulation',/storage|batter|magazyn/],['Renewables framework',/res act|renewable|oze|wind|solar|pv|biomethane/],['Energy policy / strategy',/policy|strategy|pep2040|kpeik|ets/]];
+  const polTopic=s=>{const h=polText(s);const m=POL_TOPIC.find(([,r])=>r.test(h));return m?m[0]:'Energy policy';};
+  function pCard(s){
+    if(typeof ensure==='function') ensure(s);
+    const k=polSub(s), meta=PMAP[k], src=srcList(s);
+    const co=(s.cos||[]).filter(x=>x!=='ALL'&&x!=='OTHER').map(coLabel);
+    const ent=[];
+    ent.push(`<span><em>Policy area</em>${esc(polTopic(s))}</span>`);
+    ent.push(`<span><em>Technology</em>${esc(affected(s,'tech')==='Not specified'?'Cross-technology':affected(s,'tech'))}</span>`);
+    ent.push(`<span><em>Region</em>${esc(s.region||'National')}</span>`);
+    const srcHtml=src.slice(0,4).map(x=>`<a class="gsb-src" href="${esc(x.url)}" target="_blank" rel="noopener"><i>${SRC_TYPE[x.type]||'Source'}</i>${esc(x.label)} ↗</a>`).join('');
+    return `<article class="gsb-card" style="--pc:${meta.col}">
+      <div class="gsb-top"><span class="gsb-primary" style="background:#e7ecfd;color:#3b5bdb;border-color:#3b5bdb">${POLICY_PRIMARY}</span><span class="gsb-sub">${meta.label}</span>${s.auto?'<span class="pill livep">LIVE</span>':''}<span class="gsb-date">${fmtDate(s.date)}</span></div>
+      <h3>${esc(s.hl_fix||s.sig_title||s.title)}</h3>
+      <dl class="gsb-rows">
+        <dt>Event</dt><dd><b>${esc(POL_EVENT[k])}</b></dd>
+        <dt>What changed</dt><dd><b>${esc(s.change||s.title)}</b><div class="gsb-summary">${esc(s.summary||'')}</div></dd>
+        <dt>Affected</dt><dd class="gsb-ents">${ent.join('')}</dd>
+        <dt>Source</dt><dd>${srcHtml}</dd>
+      </dl>
+    </article>`;
+  }
+  const isAnySignal=s=>isBuildSignal(s)||isPolicySignal(s);
+  const anyCard=s=>isBuildSignal(s)?bCard(s):pCard(s);
+  const TYPEDEF={GSB:{label:BUILD_PRIMARY,subs:BUILD_SUBS,test:isBuildSignal,sub:buildSub,map:BMAP},
+                 PMD:{label:POLICY_PRIMARY,subs:POL_SUBS,test:isPolicySignal,sub:polSub,map:PMAP}};
+  window.__pol={isPolicySignal,polSub,isBuildSignal};
   function affected(s,key){
     if(key==='tech'){const a=(s.tech||[]).filter(x=>x!=='cross').map(x=>TECH_LABEL[x]||x);return a.join(', ')||'Not specified';}
     if(key==='co'){const a=(s.cos||[]).filter(x=>x!=='ALL'&&x!=='OTHER').map(coLabel);return a.join(', ')||'Market-wide / other investor';}
@@ -2516,7 +2593,7 @@ render();
     const earlier='';
     return `<article class="gsb-card" style="--pc:${meta.col}">
       <div class="gsb-top"><span class="gsb-primary">${BUILD_PRIMARY}</span><span class="gsb-sub">${meta.label}</span>${s.auto?'<span class="pill livep">LIVE</span>':''}<span class="gsb-date">${fmtDate(s.date)}</span></div>
-      <h3>${esc(s.sig_title||s.title)}</h3>
+      <h3>${esc(s.hl_fix||s.sig_title||s.title)}</h3>
       <dl class="gsb-rows">
         <dt>Event</dt><dd><b>${esc(evLabel(s,k))}</b></dd>
         <dt>What changed</dt><dd><b>${esc(wc.main)}</b><div class="gsb-summary">${esc(s.summary||'')}</div></dd>
@@ -2526,13 +2603,15 @@ render();
     </article>`;
   }
   renderSignals=function(){
-    let list=dedupe(SIGNALS.filter(s=>passes(s)&&isBuildSignal(s)).sort((a,b)=>b.date.localeCompare(a.date)));
+    let list=dedupe(SIGNALS.filter(s=>passes(s)&&isAnySignal(s)).sort((a,b)=>b.date.localeCompare(a.date)));
     let html=`<section class="gsb-intro gsb-head"><h2>Signal Monitor</h2><div class="si-sort"><span>Sort</span><button data-ds="date" class="${sortMode!=='cat'?'on':''}">Newest</button><label class="si-dd ${sortMode==='cat'?'on':''}"><select data-dsel aria-label="Signal Type"><option value="" ${sortMode!=='cat'?'selected':''}>Signal Type</option>${PRIMARY_SIGNALS.map(p=>`<option value="${esc(p.id)}" ${sortMode==='cat'&&curPrimary===p.id?'selected':''}>${esc(p.label)}</option>`).join('')}</select></label></div></section>`;
-    if(!list.length){$('#view').innerHTML=html+`<div class="empty"><h2>No build-out signals match these filters</h2><p>Try removing a filter or widening the date range.</p></div>`;return;}
-    if(sortMode==='cat'){
-      html+=`<div class="gsb-primary-head"><div class="gsb-ph-k">Primary signal</div><div class="gsb-ph-row"><h2>${BUILD_PRIMARY}</h2><span>${list.length}</span></div><div class="gsb-ph-subs">${BUILD_SUBS.map(([id,label])=>{const n=list.filter(s=>buildSub(s)===id).length;return n?`<a href="#gsb-${id}">${label} <b>${n}</b></a>`:'';}).join('')}</div></div>`;
-      BUILD_SUBS.forEach(([id,label])=>{const g=list.filter(s=>buildSub(s)===id);if(g.length)html+=`<div class="gsb-group gsb-subgroup" id="gsb-${id}"><h2>${label}</h2><span>${g.length}</span><i></i></div>`+g.map(bCard).join('');});
-    }else html+=list.map(bCard).join('');
+    if(!list.length){$('#view').innerHTML=html+`<div class="empty"><h2>No signals match these filters</h2><p>Try removing a filter or widening the date range.</p></div>`;}
+    else if(sortMode==='cat'){
+      const T=TYPEDEF[curPrimary]; const tl=list.filter(T.test);
+      html+=`<div class="gsb-primary-head"><div class="gsb-ph-k">Primary signal</div><div class="gsb-ph-row"><h2>${T.label}</h2><span>${tl.length}</span></div><div class="gsb-ph-subs">${T.subs.map(([id,label])=>{const n=tl.filter(s=>T.sub(s)===id).length;return n?`<a href="#gsb-${id}">${label} <b>${n}</b></a>`:'';}).join('')}</div></div>`;
+      if(!tl.length) html+=`<div class="empty"><h2>No ${T.label} signals match these filters</h2></div>`;
+      T.subs.forEach(([id,label])=>{const g=tl.filter(s=>T.sub(s)===id);if(g.length)html+=`<div class="gsb-group gsb-subgroup" id="gsb-${id}"><h2>${label}</h2><span>${g.length}</span><i></i></div>`+g.map(anyCard).join('');});
+    }else html+=list.map(anyCard).join('');
     $('#view').innerHTML=html;
     $('#view').querySelectorAll('[data-ds]').forEach(b=>b.onclick=()=>{sortMode=b.dataset.ds;render();});
     const dd=$('#view').querySelector('[data-dsel]');
@@ -2540,11 +2619,11 @@ render();
   };
   const oldPasses=passes;
   passes=function(s,skip){
-    if(view==='signals' && !isBuildSignal(s)) return false;
+    if(view==='signals' && !isAnySignal(s)) return false;
     if(view==='signals' && skip!=='type' && F.type){
-      const [ty,sb]=F.type.split(':');
-      if(ty!=='GSB') return false;            /* only one signal type for now */
-      if(sb && buildSub(s)!==sb) return false;
+      const [ty,sb]=F.type.split(':'); const T=TYPEDEF[ty];
+      if(!T || !T.test(s)) return false;
+      if(sb && T.sub(s)!==sb) return false;
     }
     return oldPasses(s, view==='signals'?'type':skip);
   };
@@ -2557,14 +2636,14 @@ render();
     sel.previousElementSibling.textContent='Signal Type';
     /* Signal types are listed as option groups; add new types to SIGNAL_TYPES in future */
     const base=SIGNALS.filter(s=>oldPasses(s,'type'));
-    const SIGNAL_TYPES=[{id:'GSB',label:BUILD_PRIMARY,subs:BUILD_SUBS,test:isBuildSignal,sub:buildSub}];
+    const SIGNAL_TYPES=Object.entries(TYPEDEF).map(([id,T])=>Object.assign({id},T));
     sel.innerHTML='<option value="">All signal types</option>'+SIGNAL_TYPES.map(T=>{
       const b=base.filter(T.test);
       return `<optgroup label="${esc(T.label)}"><option value="${T.id}" ${F.type===T.id?'selected':''}>All — ${esc(T.label)} (${b.length})</option>`+
         T.subs.map(([id,label])=>{const v=T.id+':'+id;return `<option value="${v}" ${F.type===v?'selected':''}>&nbsp;&nbsp;${esc(label)} (${b.filter(s=>T.sub(s)===id).length})</option>`;}).join('')+'</optgroup>';
     }).join('');
     const chip=[...document.querySelectorAll('#chips .chip-x')].find(c=>c.querySelector('[data-k="type"]'));
-    if(chip&&F.type){const [ty,sb]=F.type.split(':');chip.firstChild.textContent=sb?(BMAP[sb]||{}).label:BUILD_PRIMARY;}
+    if(chip&&F.type){const [ty,sb]=F.type.split(':');const T=TYPEDEF[ty]||TYPEDEF.GSB; chip.firstChild.textContent=sb?(T.map[sb]||{}).label:T.label;}
   };
   const oldRender=render;
   render=function(){
@@ -2990,9 +3069,9 @@ render();
    about an off-scope topic (history, war, politics, defence, opinion, society, sport).
    Applies to News Feed, Signal Monitor and Newsletter. Curated items are unaffected. */
 (function(){
-  const IN=/energ|electric|power (plant|station|market|grid|sector|price|generation|purchase)|\bgrid\b|\bwind\b|wind farm|offshore|onshore|solar|\bpv\b|photovolt|batter|storage|\bbess\b|nuclear|\bsmr\b|reactor|\bgas\b|\blng\b|ccgt|ocgt|peaker|\bcoal\b|lignite|\bheat|\bchp\b|cogenerat|hydrogen|biomethane|capacity market|capacity auction|\bcfd\b|renewabl|\bppa\b|tariff|interconnect|transmission|substation|turbine|prąd|wiatr|słoneczn|fotowolt|magazyn|jądrow|atomow|węgl|ciepł|ciepl|sieci|gazow|\b(pge|enea|energa|orlen|tauron|pej|pse|ure|ze pak|polenergia|synthos|osge|equinor|ørsted|orsted|rwe|engie|axpo|fortum|edpr|westinghouse|bechtel|ge vernova)\b|iberdrola|greenvolt|r\.power|\bdri\b|dtek|actis|northland|ocean winds|statkraft|qair|enefit|\bcez\b|čez|e\.on|vattenfall|totalenergies|baltic power|electrum|photon energy/i;
+  const IN=/energ|electric|power (plant|station|market|grid|sector|price|generation|purchase)|\bgrid\b|\bwind\b|wind farm|offshore|onshore|solar|\bpv\b|photovolt|batter|storage|\bbess\b|nuclear|\bsmr\b|reactor|\bgas\b|\blng\b|ccgt|ocgt|peaker|\bcoal\b|lignite|\bheat|\bchp\b|cogenerat|hydrogen|biomethane|capacity market|capacity auction|\bcfd\b|renewabl|\bppa\b|tariff|interconnect|transmission|substation|turbine|prąd|wiatr|słoneczn|fotowolt|magazyn|jądrow|atomow|węgl|ciepł|ciepl|sieci|gazow|\b(pge|enea|energa|orlen|tauron|pej|pse|ure|ze pak|polenergia|synthos|osge|equinor|ørsted|orsted|rwe|engie|axpo|fortum|edpr|westinghouse|bechtel|ge vernova)\b|iberdrola|greenvolt|r\.power|\bdri\b|dtek|actis|northland|ocean winds|statkraft|qair|enefit|\bcez\b|čez|e\.on|vattenfall|totalenergies|baltic power|electrum|photon energy|energy law|prawo energetyczne|\bres act\b|ustaw\w* o odnawialnych|nowelizacj\w* ustawy|projekt ustawy|\bnecp\b|\bkpeik\b|\bpep ?2040\b|\bets ?2?\b|state aid|pomoc publiczn|capacity mechanism|market design|market reform|reforma rynku|price freeze|derogation|support scheme|system wsparcia|deregulac|public consultation|draft (law|bill|act|amendment)/i;
   const OUT=/\bwwii\b|world war|second world war|nazi|holocaust|reparation|compensation .*victims|\bvictims\b|\[opinion\]|\bopinion\b|\bop-ed\b|\bnato\b|military|\barmy\b|apache|missile|defen[cs]e (minister|spending|industry)|security forum|ready to fight|coalition partner|quits .*government|\belection\b|\bpresidential (race|campaign)\b|migra|refugee|football|\bsport|olympic|museum|exhibition|\bfilm\b|church|abortion|court rul|\bcrime\b|police|murder|weather forecast/i;
-  const head=s=>(s.title||'')+' '+(s.title_pl||'')+' '+(s.src_title||'');
+  const head=s=>(s.title||'')+' '+(s.title_pl||'')+' '+(s.src_title||'')+' '+(s.title_clear||'');   /* v83: vague headlines are judged with their descriptive title */
   const offScope=s=>{ if(!s||!s.auto) return false; const h=head(s); return OUT.test(h) || !IN.test(h); };
   window.offScopeLive=offScope;
   const _p=passes; passes=function(s,skip){ if(offScope(s)) return false; return _p(s,skip); };
@@ -3367,6 +3446,138 @@ window.SIG_EXCLUDE=new Set(['ic9']); /* EDF "not withdrawing" — no change, not
       summary:'State agency ARP launched “Ready for Offshore” with PARP and offshore developers PGE Baltica and ORLEN Neptun. It combines subsidised training in eight supplier competences with up to PLN 100m of ARP financing — investment and development loans, including InvestEU-backed loans, and leasing — to help Polish firms win Baltic offshore wind contracts.'});
     SEED.push(x); SIGNALS.push(x);
   }
+  render();
+})();
+</script>
+<script>
+/* ═══ v80: expanded Sources panel + clearer headlines for vague titles ═══
+   1) Sources panel: adds (a) new sources for the monitoring scope, (b) sources already used in news
+      links but missing from the panel, (c) publishers already supplying items to the feed.
+   2) News feed: vague headlines (e.g. “Informacja nr 10/2026”, “Periodic reports for 2025”) are shown
+      with a descriptive headline based on the article content; the exact publisher headline is kept
+      underneath as “Original headline”. All other headlines are unchanged. */
+(function(){
+  const ADD = [
+    /* ── new: policy & market design ── */
+    ["Government & legislation","RCL — Government Legislation Centre (draft laws)","Government","https://legislacja.gov.pl/","legislacja.gov.pl"],
+    ["Government & legislation","NIK — Supreme Audit Office","State audit","https://www.nik.gov.pl/","nik.gov.pl"],
+    ["Regulators","EC DG COMP — state-aid case register","EU institution","https://competition-cases.ec.europa.eu/","competition-cases.ec.europa.eu|commission.europa.eu"],
+    ["System operators & market","Zarządca Rozliczeń — CfD & compensation settlements","Settlement agent","https://www.zrsa.pl/","zrsa.pl"],
+    ["System operators & market","ARE — Energy Market Agency (statistics)","Market statistics","https://www.are.waw.pl/","are.waw.pl"],
+    ["System operators & market","GAZ-SYSTEM — gas TSO (CCGT/OCGT connections)","Gas TSO","https://www.gaz-system.pl/","gaz-system.pl"],
+    ["System operators & market","TAURON Dystrybucja","DSO","https://www.tauron-dystrybucja.pl/","tauron-dystrybucja.pl"],
+    ["System operators & market","Litgrid — Lithuanian TSO (interconnection)","TSO (neighbour)","https://www.litgrid.eu/","litgrid.eu"],
+    ["Financing institutions","NFOŚiGW — National Fund for Environmental Protection","National financing","https://www.gov.pl/web/nfosigw","nfosigw|gov.pl/web/nfosigw"],
+    ["Analysis & legal briefings","Instrat · Instytut Reform · WiseEuropa","Think tanks","https://instrat.pl/en/","instrat.pl|ireform.eu|wise-europa.eu"],
+    /* ── new: permitting ── */
+    ["Procurement & permitting","Urząd Morski w Gdyni — offshore wind siting permits (PSZW)","Maritime administration","https://www.umgdy.gov.pl/","umgdy.gov.pl"],
+    ["Procurement & permitting","Renewables contact point (gov.pl/web/kontaktoze)","Permitting","https://www.gov.pl/web/kontaktoze","gov.pl/web/kontaktoze"],
+    ["Procurement & permitting","RDOŚ — regional environmental directorates","Permitting","https://www.gov.pl/web/rdos-gdansk","gov.pl/web/rdos"],
+    /* ── company disclosures: already used in links + new ── */
+    ["Company disclosures","GPW — stock-exchange filings (ESPI/EBI)","Exchange filings","https://www.gpw.pl/komunikaty","gpw.pl"],
+    ["Company disclosures","Polimex Mostostal · Budimex — EPC contractors","Company / ESPI","https://www.polimex-mostostal.pl/","polimex-mostostal.pl|budimex.pl"],
+    ["Company disclosures","Baltic Power · ORLEN Neptun","Offshore developers","https://balticpower.pl/","balticpower.pl|neptun.orlen.pl"],
+    ["Company disclosures","Offshore & renewables partners (Equinor, RWE, EDP/EDPR, Ocean Winds, TotalEnergies, VSB, European Energy)","Company newsrooms","https://www.rwe.com/en/press/","equinor.com|rwe.com|edp.com|edpr-investors.com|oceanwinds.com|totalenergies.com|vsb.energy|europeanenergy.com"],
+    ["Company disclosures","Investors & storage buyers (Northland Power, Actis, KKR, LG Energy Solution, AtkinsRéalis)","Company newsrooms","https://www.northlandpower.com/","northlandpower.com|act.is|kkr.com|lgensol.pl|atkinsrealis.com"],
+    ["Company disclosures","Developer newsrooms (R.Power, Qair, Statkraft, Enefit, Lightsource bp, Better Energy)","Company newsrooms","https://r.power/","r.power|qair|statkraft|enefit|lightsourcebp.com|betterenergy"],
+    ["Company disclosures","Iberdrola · ZE PAK · Synthos / OSGE","Company newsrooms","https://www.iberdrola.com/press-room","iberdrola.com|synthosgroup.com|osge"],
+    /* ── industry associations ── */
+    ["Industry associations","PSEW — Polish Wind Energy Association","Industry association","https://psew.pl/","psew.pl"],
+    ["Industry associations","PIGEOR — Polish Chamber of Renewable Energy","Industry association","https://www.pigeor.pl/","pigeor.pl"],
+    ["Industry associations","PSF — Polish Photovoltaics Association","Industry association","https://stowarzyszeniepv.pl/","stowarzyszeniepv.pl"],
+    ["Industry associations","PSME — Polish Energy Storage Association","Industry association","https://psme.org.pl/","psme.org.pl"],
+    ["Industry associations","IGCP — District Heating Chamber (CHP & fuel switching)","Industry association","https://igcp.org.pl/","igcp.org.pl"],
+    /* ── Polish press already in the feed + new ── */
+    ["Specialist media (complementary)","CIRE.pl · Teraz Środowisko","Polish trade press","https://www.cire.pl/","cire.pl|teraz-srodowisko.pl"],
+    ["Specialist media (complementary)","Gramwzielone.pl · Globenergia.pl","Renewables & storage press (PL)","https://www.gramwzielone.pl/","gramwzielone.pl|globenergia.pl"],
+    ["Specialist media (complementary)","Baltic Wind · offshoreWIND.biz","Offshore wind press","https://balticwind.eu/","balticwind.eu|offshorewind.biz"],
+    ["Specialist media (complementary)","BiznesAlert.pl · Energy Drink (EN)","Energy policy press","https://biznesalert.pl/","biznesalert.pl|energydrink.today"],
+    ["Specialist media (complementary)","ISBnews · Biznes24 · StrefaInwestorow · Stockwatch.pl","Business newswires","https://www.isbnews.pl/","isbnews.pl|biznes24.pl|strefainwestorow.pl|stockwatch.pl"],
+    ["Specialist media (complementary)","Notes From Poland · Poland Insight · WBJ · CEO.com.pl","Poland business news (EN)","https://notesfrompoland.com/","notesfrompoland.com|polandinsight.com|wbj.pl|ceo.com.pl"],
+    ["Specialist media (complementary)","Radio Gdańsk · WodneSprawy","Regional media","https://radiogdansk.pl/","radiogdansk.pl|wodnesprawy.pl"],
+    ["Specialist media (complementary)","NucNet · Nuclear Engineering International","Nuclear trade press","https://www.nucnet.org/","nucnet.org|neimagazine.com"],
+    ["Specialist media (complementary)","reNEWS · PV Tech · inspiratia · Riviera","Energy trade press","https://renews.biz/","renews.biz|pv-tech.org|inspiratia.com|rivieramm.com"],
+    ["Specialist media (complementary)","Clean Energy Wire · Enlit · Industry Alarm · Euronews","European energy press","https://www.cleanenergywire.org/","cleanenergywire.org|enlit.world|industryalarm.eu|euronews.com"],
+    ["Specialist media (complementary)","MarketScreener · Briefs Finance · Best Magazine","Financial / deal press","https://www.marketscreener.com/","marketscreener.com|briefs.co|bestmag.co.uk"]
+  ];
+  const have = new Set(SOURCES.map(x=>x[1]));
+  ADD.forEach(a=>{ if(!have.has(a[1])) SOURCES.push(a); });
+  /* keep groups together: sort by group order (existing groups first, new group last) */
+  const order = [...new Set(SOURCES.map(x=>x[0]))];
+  SOURCES.sort((a,b)=>order.indexOf(a[0])-order.indexOf(b[0]));
+
+  /* ── 2) descriptive headlines for vague titles (original kept underneath) ── */
+  const HL = [
+    ['Milionowy kontrakt w sprawie farm wiatrowych','PGE awards Elektrotim PLN 331m contract for four batteries at its wind farms'],
+    ['Dispatch from Poland','Poland pushes for voluntary ETS2 and broader EU ETS reform'],
+    ['RRF Impact – Energy in Poland','EC: 40% of Poland’s €54.7bn Recovery Plan funding goes to energy'],
+    ['Informacja nr 10/2026','URE finds no third-party investor interest in system-service storage assets'],
+    ['Karta aktualizacji nr RRM/Z/16/2026','URE approves capacity-market rules update RRM/Z/16/2026'],
+    ['Komunikat dotyczący integracji z systemem CSIRE','TAURON Dystrybucja delays full switch to the CSIRE energy data hub beyond 19 October'],
+    ['Podsumowanie tygodnia w energetyce i gospodarce (12-18','NIK audit criticises PEJ spending controls; President signs RES Act amendment'],
+    ['Krajowy gigant podpisał umowę na dostawę turbin gazowych','TAURON signs €293m Ansaldo contract for Jaworzno OCGT gas turbines'],
+    ['Polski gigant energetyczny z nowymi członkami rady nadzorczej','PGE AGM appoints seven new supervisory board members'],
+    ['Tak powstaje elektrownia CCGT Ostrołęka','Ostrołęka CCGT: turbine set and heat-recovery boiler installed, first firing targeted H2 2025'],
+    ['Operatorzy łączą siły','TGE and three DSOs agree a national flexibility-services platform'],
+    ['Energy Transition in Poland. Edition 2025','Forum Energii: Poland stays a net power importer as up to 8 GW of coal faces exit'],
+    ['Site of Polish plant deemed suitable','Nuclear regulator finds Lubiatowo-Kopalino site suitable for Poland’s first plant'],
+    ['Green Light for Poland’s First Nuclear Power Plant','GDOŚ upholds environmental decision for Lubiatowo-Kopalino nuclear plant'],
+    ['European BESS M&A and financings totalling over 1GW','Northland Power buys 300 MW / 1.2 GWh of Polish BESS projects from Greenvolt'],
+    ['Actions initiated to acquire up to 100% of ENERGA S.A. shares','ORLEN launches bid for 100% of Energa at PLN 18.87 per share'],
+    ['Another draft bill on renewable energy sources included','Draft RES Act amendment introducing biomethane support enters government work schedule'],
+    ['Faster, easier, more effective. The Sejm adopted a key reform','Sejm passes Energy Law amendment (UC84) to speed up grid connections'],
+    ['Szybciej, łatwiej, skuteczniej. Sejm przyjął kluczową reformę','Sejm passes Energy Law amendment (UC84) to speed up grid connections'],
+    ['Deregulation in energy sector – new legislative proposals','Deregulation bill proposes new generation-licence rules and cable pooling for storage'],
+    ['Amendments to the Capacity Market Act. Key Changes and Implications','Capacity Market Act amendment keeps high-emission units in the market to 2028'],
+    ['Implements its Strategy of Capital Recycling','TotalEnergies agrees €1.57bn VSB deal, adding Polish wind, solar and storage pipeline'],
+    ['Periodic reports for 2025','PGE publishes FY2025 annual report with large coal impairments'],
+    ['Consolidated report for H1 2026','PGE returns to profit in H1 2026 with ~PLN 2.0bn net profit'],
+    ['Consolidated report for H1 2024','PGE H1 2024: EBITDA PLN 5.14bn, net profit PLN 2.02bn'],
+    ['Q1 2024 Financial and Operating Results','PGE Q1 2024: EBITDA falls to PLN 2.54bn, net profit PLN 893m'],
+    ['2025 was a breakthrough year','Enea FY2025: net profit PLN 1.77bn on record PLN 6.2bn capex'],
+    ['alongside the lowest fuel prices in the European Union','ORLEN Q1 2026: LIFO EBITDA PLN 14.1bn; record PLN 8/share dividend proposed'],
+    ['ORLEN Group reports record profits in international markets','ORLEN Q2 2026: net profit PLN 7.7bn, Energy segment EBITDA PLN 3.4bn']
+  ];
+  const norm = t => String(t||'').replace(/\s+/g,' ').replace(/[‘’]/g,"'").trim().toLowerCase();
+  const HLN = HL.map(([o,n])=>[norm(o),n]);
+  const fixFor = t => { const h=norm(t); const m=HLN.find(([o])=>h.includes(o)); return m?m[1]:null; };
+  window.HEADLINE_FIX = HL;
+
+  /* make the rephrased headline searchable */
+  const tag = s => { const f=fixFor(s.src_title||s.title_pl||s.title)||s.title_clear||''; if(f) s.hl_fix=f; return s; };
+
+  /* v83: numbered notices / periodic reports with near-identical headlines are different items —
+     only an identical article link makes them duplicates */
+  const VAGUE_RX=/^(informacja nr|komunikat\b|karta aktualizacji|raport (bieżący|okresowy)|periodic reports?|consolidated report|current report|(q[1-4]|h[12])\b.{0,40}(results|report)|dispatch from|podsumowanie tygodnia|weekly summary|energy transition in poland|rrf impact|komunikat prasowy|press release$|ogłoszenie\b)/i;
+  const _dd80 = dedupe;
+  dedupe = window.dedupe = function(list){
+    const order = new Map(); list.forEach((s,i)=>order.set(s.id,i));
+    const vague=[], rest=[];
+    list.forEach(s=>(VAGUE_RX.test(String(s.src_title||s.title_pl||s.title||'').trim())?vague:rest).push(s));
+    const seen=new Set();
+    const v=vague.filter(s=>{ const u=((s.links&&s.links[0]&&s.links[0].url)||s.src_url||s.id); if(seen.has(u)) return false; seen.add(u); return true; });
+    return _dd80(rest).concat(v).sort((a,b)=>(order.has(a.id)?order.get(a.id):1e9)-(order.has(b.id)?order.get(b.id):1e9));
+  };
+  const _rn = renderNews;
+  renderNews = function(){
+    _rn.apply(this, arguments);
+    const BYURL = {}; (SIGNALS||[]).forEach(s=>{ tag(s); if(s.hl_fix && s.src_url) BYURL[s.src_url]=s.hl_fix; });
+    document.querySelectorAll('#view .nhd > a').forEach(a=>{
+      if(a.dataset.hlfix) return;
+      const orig = a.textContent; const f = fixFor(orig) || BYURL[a.getAttribute('href')];
+      if(!f) return;
+      a.dataset.hlfix='1'; a.title='Original headline: '+orig; a.textContent=f;
+      const tr = a.parentNode.querySelector('.ntr');
+      const o = document.createElement('div'); o.className='ntr nor';
+      o.innerHTML = '<b>Original headline:</b> '+esc(orig);
+      if(tr){ tr.remove(); a.parentNode.appendChild(o); }
+      else { a.parentNode.appendChild(o); }
+    });
+  };
+  const st=document.createElement('style');
+  st.textContent='.ntr.nor{color:#7f7f7f;font-style:italic}';
+  document.head.appendChild(st);
+  (SIGNALS||[]).forEach(tag);
   render();
 })();
 </script>
