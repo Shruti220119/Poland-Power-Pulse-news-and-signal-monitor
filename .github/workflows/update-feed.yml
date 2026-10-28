@@ -15,6 +15,7 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
         with:
@@ -70,10 +71,6 @@ jobs:
               exit 1
             fi
             echo "Push attempt $attempt failed - retrying in 10 s..."; sleep 10
-            done
-          echo "::error::Push failed after 3 attempts. See the log lines above."
-          exit 1
-
           done
           echo "::error::Push failed after 3 attempts. See the log lines above."
           exit 1
