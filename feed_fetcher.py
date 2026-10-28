@@ -1,4 +1,4 @@
-"""Poland Power Pulse - live feed fetcher v5 (stdlib only, no pip installs).
+"""Poland Power Pulse - live feed fetcher v6 (stdlib only, no pip installs).
 Monitors ALL dashboard sources every run (the GitHub workflow runs it every 30 minutes):
   A. 16 direct RSS feeds (publishers that offer an RSS feed)
   B. Google News "site:" searches for every other publisher in the dashboard (company,
@@ -12,6 +12,10 @@ Guardrails
   3. Priority   - kept version: 1 official · 2 free specialist · 3 free general ·
                   4 subscription specialist · 5 subscription general, then earliest report.
   4. Coverage   - the log lists every monitored publisher with items found this run.
+  v6 additions: ~35 extra sources (policy, permitting, grid, associations, trade press, company newsrooms);
+  policy / regulation terms in the scope filter; `title_clear` (a descriptive headline for vague titles,
+  exact publisher headline kept in `title`); `cos_headline` (companies named in the headline only, so
+  national policy items are not tagged to a company); `generated` timestamp for the dashboard clock.
 Optional translation of Polish items: GitHub secrets AZURE_TRANSLATOR_KEY / AZURE_TRANSLATOR_REGION."""
 import json, os, re, time, hashlib, html, urllib.request, xml.etree.ElementTree as ET
 from datetime import datetime, timezone, date
@@ -123,6 +127,44 @@ SOURCES = [
     ("Dentons", "dentons.com", "general", "en", "int-law"),
     ("CMS", "cms.law", "general", "en", "int-law"),
     ("SSW", "ssw.solutions", "general", "en", "int-law"),
+    # -- v6: policy, permitting, grid and market bodies (Poland) --
+    ("Government Legislation Centre (RCL)", "legislacja.gov.pl", "official", "pl", "pl-gov2"),
+    ("NIK - Supreme Audit Office", "nik.gov.pl", "official", "pl", "pl-gov2"),
+    ("NFOŚiGW", "nfosigw.gov.pl", "official", "pl", "pl-gov2"),
+    ("Maritime Office Gdynia (offshore permits)", "umgdy.gov.pl", "official", "pl", "pl-gov2"),
+    ("Zarządca Rozliczeń", "zrsa.pl", "official", "pl", "pl-gov2"),
+    ("ARE - Energy Market Agency", "are.waw.pl", "official", "pl", "pl-gov2"),
+    ("GAZ-SYSTEM", "gaz-system.pl", "official", "pl", "pl-gov2"),
+    ("Renewables contact point (gov.pl)", "gov.pl/web/kontaktoze", "official", "pl", "pl-gov2"),
+    # -- v6: company newsrooms, contractors and exchange filings --
+    ("TAURON Dystrybucja", "tauron-dystrybucja.pl", "official", "pl", "pl-official3"),
+    ("ZE PAK", "zepak.com.pl", "official", "pl", "pl-official3"),
+    ("Polimex Mostostal", "polimex-mostostal.pl", "official", "pl", "pl-official3"),
+    ("Budimex", "budimex.pl", "official", "pl", "pl-official3"),
+    ("LG Energy Solution Wrocław", "lgensol.pl", "official", "pl", "pl-official3"),
+    ("GPW - exchange filings", "gpw.pl", "official", "pl", "pl-official3"),
+    ("Iberdrola", "iberdrola.com", "official", "en", "int-official4"),
+    ("OSGE (Orlen Synthos Green Energy)", "osge.com", "official", "en", "int-official4"),
+    ("EDP Renewables investors", "edpr-investors.com", "official", "en", "int-official4"),
+    ("European Commission (Europa)", "commission.europa.eu", "official", "en", "int-official4"),
+    # -- v6: associations, think tanks and Polish trade press --
+    ("PSEW", "psew.pl", "specialist", "pl", "pl-press4"),
+    ("PIGEOR", "pigeor.pl", "specialist", "pl", "pl-press4"),
+    ("Polish PV Association (PSF)", "stowarzyszeniepv.pl", "specialist", "pl", "pl-press4"),
+    ("Instrat", "instrat.pl", "specialist", "pl", "pl-press4"),
+    ("Instytut Reform", "ireform.eu", "specialist", "pl", "pl-press4"),
+    ("WiseEuropa", "wise-europa.eu", "specialist", "pl", "pl-press4"),
+    ("IGCP - district heating", "igcp.org.pl", "specialist", "pl", "pl-press4"),
+    ("Globenergia.pl", "globenergia.pl", "specialist", "pl", "pl-press3"),
+    ("Teraz Środowisko", "teraz-srodowisko.pl", "specialist", "pl", "pl-press3"),
+    ("BiznesAlert.pl", "biznesalert.pl", "specialist", "pl", "pl-press3"),
+    ("ISBnews", "isbnews.pl", "specialist", "pl", "pl-press3"),
+    ("Stockwatch.pl", "stockwatch.pl", "general", "pl", "pl-press3"),
+    ("Biznes24", "biznes24.pl", "general", "pl", "pl-press3"),
+    # -- v6: international trade press --
+    ("Nuclear Engineering International", "neimagazine.com", "specialist", "en", "int-press3"),
+    ("reNEWS", "renews.biz", "specialist", "en", "int-press3"),
+    ("PV Tech", "pv-tech.org", "specialist", "en", "int-press3"),
     # Direct-RSS publishers (section A) — listed so ranking and coverage use one registry
     ("CEEnergyNews", "ceenergynews.com", "specialist", "en", "rss"),
     ("ESS News", "ess-news.com", "specialist", "en", "rss"),
@@ -138,13 +180,15 @@ SOURCES = [
     ("CIRE", "cire.pl", "specialist", "pl", "rss"),
     ("Energetyka24", "energetyka24.com", "specialist", "pl", "rss"),
 ]
-PAID = {"Renewables Now", "PAP Biznes", "inspiratia", "Reuters", "MarketScreener", "Riviera", "NucNet"}
+PAID = {"Renewables Now", "PAP Biznes", "inspiratia", "Reuters", "MarketScreener", "Riviera", "NucNet",
+        "Nuclear Engineering International", "reNEWS"}   # v6: partly paywalled
 
 # ── B. GOOGLE NEWS GROUPS (one batched query per group, last 7 days) ────────
 KW_PL = '(energia OR energetyka OR elektrownia OR "magazyn energii" OR wiatrowa OR fotowoltaika OR jądrowa OR ciepłownia OR "rynek mocy" OR OZE)'
 KW_POLAND = "(Poland OR Polish OR Polska)"
 KW_EN = "(Poland OR Polish) (energy OR power OR wind OR solar OR battery OR storage OR nuclear OR gas OR coal OR grid OR heat)"
-GROUP_KW = {"pl-official": "", "pl-official2": "", "pl-gov": KW_PL, "int-official": KW_POLAND,
+GROUP_KW = {"pl-official": "", "pl-official2": "", "pl-official3": "", "pl-gov": KW_PL, "pl-gov2": KW_PL,
+            "int-official4": KW_POLAND, "pl-press3": KW_PL, "pl-press4": KW_PL, "int-press3": KW_EN, "int-official": KW_POLAND,
             "int-official2": KW_POLAND, "int-official3": KW_POLAND, "pl-press": KW_PL, "pl-press2": KW_PL,
             "int-press": KW_EN, "int-press2": KW_EN, "int-law": KW_EN}
 
@@ -188,6 +232,10 @@ INVESTORS = (r"pge|enea|energa|orlen|tauron|pej|pse|ure|ze pak|polenergia|syntho
              r"ørsted|orsted|rwe|engie|axpo|fortum|edpr?|westinghouse|bechtel|ge vernova|"
              r"iberdrola|greenvolt|r\.power|dri|dtek|actis|northland|ocean winds|statkraft|qair|"
              r"enefit|cez|čez|eon|e\.on|vattenfall|totalenergies|baltic power|bałtyk|electrum|photon energy")
+POLICY_TERMS = (r"energy law|prawo energetyczne|\bres act\b|ustaw\w* o odnawialnych|nowelizacj\w* ustawy|projekt ustawy|"
+                r"\bnecp\b|\bkpeik\b|\bpep ?2040\b|\bets ?2?\b|state aid|pomoc publiczn|capacity mechanism|market design|"
+                r"market reform|reforma rynku|price freeze|zamrożeni\w* cen|derogation|support scheme|system wsparcia|"
+                r"deregulac|konsultacj\w* (społeczn|publiczn)|public consultation|draft (law|bill|act|amendment)")
 IN_SCOPE = re.compile(
     r"energ|electric|power (plant|station|market|grid|sector|price|generation|purchase)|\bgrid\b|"
     r"\bwind\b|offshore|onshore|solar|\bpv\b|photovolt|batter|storage|\bbess\b|"
@@ -198,7 +246,7 @@ IN_SCOPE = re.compile(
     r"prąd|elektrown|elektrociepł|wiatr|fotowolt|magazyn|jądrow|atomow|reaktor|węgl|"
     r"ciepł|ciepl|kogenera|gazow|wodór|wodor|biometan|sieci|przesył|dystrybuc|"
     r"rynek mocy|rynku mocy|aukcj|kontrakt(y|ów)? różnicow|taryf|\boze\b|odnawialn|"
-    r"\b(" + INVESTORS + r")\b", re.I)
+    + POLICY_TERMS + r"|\b(" + INVESTORS + r")\b", re.I)
 OFF_SCOPE = re.compile(
     r"\bwwii\b|world war|second world war|nazi|holocaust|reparation|\bvictims\b|"
     r"\[opinion\]|\bopinion\b|\bop-ed\b|\bcomment(ary)?:|"
@@ -308,6 +356,8 @@ def same_event(a, b):
         return ""
     if canon(a["links"][0]["url"]) == canon(b["links"][0]["url"]):
         return "R1 same article URL"
+    if VAGUE.search(a["title"].strip()) and VAGUE.search(b["title"].strip()):
+        return ""      # v6: numbered notices / periodic reports ("Informacja nr 10/2026" vs "nr 11/2026") are different items
     wa, wb = words(a["title"]), words(b["title"])
     j, n = jacc(wa, wb)
     if j >= 0.6:
@@ -387,6 +437,32 @@ def change_line(title, summary):
     first = re.split(r"(?<=[.!?])\s+", summary or "")[0] if summary else ""
     return first if first and first.endswith((".", "!", "?")) and 6 <= len(first.split()) <= 35 else title
 
+VAGUE = re.compile(r"^(informacja nr|komunikat\b|karta aktualizacji|raport (bieżący|okresowy)|periodic reports?|"
+                   r"consolidated report|current report|(q[1-4]|h[12])\b.{0,40}(results|report)|dispatch from|"
+                   r"podsumowanie tygodnia|weekly summary|energy transition in poland|rrf impact|"
+                   r"komunikat prasowy|press release$|ogłoszenie\b)", re.I)
+def is_vague(*titles):
+    return any(t and (VAGUE.search(t.strip()) or len(t.split()) <= 3) for t in titles)
+def clear_title(title, title_pl, summary, max_words=20):
+    """Descriptive headline built from the article summary when the publisher headline is vague.
+    The exact publisher headline always stays in `title`. Returns "" if no usable summary."""
+    if not is_vague(title, title_pl) or not summary:
+        return ""
+    first = re.split(r"(?<=[.!?])\s+", summary.strip())[0].rstrip(".")
+    if len(first.split()) > max_words:                     # cut at a natural break before the limit
+        for sep in (", according", ", while", ", as ", "; ", " - ", " – ", ", "):
+            head = first.split(sep)[0]
+            if 6 <= len(head.split()) <= max_words:
+                first = head
+                break
+        else:
+            first = " ".join(first.split()[:max_words]).rstrip(",;:") + "…"
+    if len(first.split()) < 5:
+        return ""
+    return first if first.lower() != (title or "").lower() else ""
+def scope_text(title, desc=""):
+    """Vague headlines (e.g. 'Informacja nr 10/2026') are scope-checked on headline + summary."""
+    return f"{title} {desc}" if is_vague(title) and desc else title
 def parse_date(s):
     try:
         return parsedate_to_datetime(s).astimezone(timezone.utc).strftime("%Y-%m-%d")
@@ -426,7 +502,7 @@ def fetch(name, url, google=False, polish_feed=False):
         local = lang == "pl"                              # Polish sources are about Poland by definition
         if not ((local or POLAND.search(hay)) and (POWER.search(hay) or IN_SCOPE.search(title))):
             continue
-        if not in_scope(title):
+        if not in_scope(scope_text(title, desc)):
             dropped += 1
             print(f"  OUT-OF-SCOPE ({publisher}): {title[:90]}")
             continue
@@ -439,6 +515,7 @@ def fetch(name, url, google=False, polish_feed=False):
                        "type": "official" if tier == "official" else "press"}],
             "source_url": source_url, "tier": tier,
             "cos": cos, "publisher": publisher, "lang": lang, "region": "National",
+            "cos_headline": [k for k, rx in COS.items() if re.search(rx, title, re.I)] or ["ALL"],
         }
         if is_paid(item):
             item["links"][0]["label"] += " · subscription required"
@@ -486,11 +563,17 @@ def main():
             print(f"SKIP {name}: {e}")
         if google:
             time.sleep(2)                                  # be polite to Google News
-    kept = [s for s in store.values() if in_scope(s.get("title_pl") or s.get("title", ""))]
+    kept = [s for s in store.values() if in_scope(scope_text(s.get("title_pl") or s.get("title", ""), s.get("summary", "")))]
     for s in kept:
         s["summary"] = tidy(s.get("summary", "")) if s.get("summary") else ""
         if not s.get("change") or s["change"].endswith("…"):
             s["change"] = change_line(s["title"], s["summary"])
+    for s in kept:                                         # v6: descriptive headline for vague titles
+        s["title_clear"] = clear_title(s.get("title", ""), s.get("title_pl", ""), s.get("summary", ""))
+        if not s["title_clear"]:
+            s.pop("title_clear", None)
+        if "cos_headline" not in s:                       # items stored by an older version
+            s["cos_headline"] = [k for k, rx in COS.items() if re.search(rx, s.get("title_pl") or s.get("title", ""), re.I)] or ["ALL"]
     print(f"Scope clean-up: removed {len(store) - len(kept)} off-scope items")
     before = len(kept)
     kept = dedupe(kept)
@@ -501,7 +584,8 @@ def main():
         print(f"  {'✓' if n in found else '·'} {n}: {found.get(n, 0)}")
     sigs = sorted(kept, key=lambda s: s["date"], reverse=True)[:600]
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps({"updated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+    now_iso = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    OUT.write_text(json.dumps({"updated": now_iso, "generated": now_iso,
                                "sources_monitored": len(names), "signals": sigs},
                               ensure_ascii=False, indent=1), encoding="utf-8")
     print(f"Wrote {len(sigs)} live items to {OUT}")
