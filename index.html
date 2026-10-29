@@ -309,7 +309,7 @@ button.tg.as:hover{background:#fbd3e1}
 .ppp-loading #view{opacity:.35;transition:opacity .2s}
 </style>
 <script>
-document.documentElement.setAttribute('data-ppp','v88');
+document.documentElement.setAttribute('data-ppp','v89');
 document.documentElement.classList.add('ppp-loading');
 window.__quiet=true;
 window.__parsed=new Promise(function(r){window.__parsedOk=r;});
@@ -3610,6 +3610,51 @@ window.SIG_EXCLUDE=new Set(['ic9']); /* EDF "not withdrawing" — no change, not
   st.textContent='.ntr.nor{color:#7f7f7f;font-style:italic}';
   document.head.appendChild(st);
   (SIGNALS||[]).forEach(tag);
+  render();
+})();
+</script>
+<script>
+/* ═══ v89: latest news added (items published 12–28 Oct 2026 that were missing from the dashboard) ═══
+   Exact publisher headlines and direct article links. Ids h34–h36 use the "exact at source" path, so the
+   News Feed shows the publisher headline and the Signal Monitor shows the "what changed" line.
+   Scope: storage build-out (PGE Gryfino, Tavion) and capacity-market process (PSE). */
+(function(){
+  const NEW = [
+    { id:'h34', date:'2026-10-28', cos:['PGE'], region:'West Pomerania', tech:['bess'], sub:'CON', stage:'CON',
+      assets:['Gryfino BESS'],
+      title:'PGE breaks ground on 400 MW energy storage project in Poland', publisher:'Renewables Now',
+      links:[{label:'Renewables Now — article', url:'https://renewablesnow.com/news/pge-breaks-ground-on-400-mw-energy-storage-project-in-poland-1303836/', type:'press'},
+             {label:'Energy-Storage.News — also reported', url:'https://www.energy-storage.news/poland-greenvolt-sells-1-6gwh-of-projects-to-ar-pge-building-800mwh-with-fluence-tech/', type:'press'}],
+      unit:'PGE — Gryfino BESS (400 MW / 800 MWh)',
+      change:'PGE starts construction of the 400 MW / 800 MWh Gryfino battery in West Pomerania, due for operation by end-2028',
+      why:'Adds a second large-scale PGE battery after Żarnowiec; the project holds a 17-year capacity-market contract.',
+      summary:'PGE’s renewables unit has officially started construction of the 400 MW / 800 MWh Gryfino battery energy storage facility in Nowe Czarnowo, West Pomerania, using Fluence Smartstack technology (94 units of 10 MWh). A consortium of Spec Bau Polska and El Professional is building it; the investment exceeds PLN 1.14bn gross. It is PGE’s second large-scale storage facility after the 262 MW / 981 MWh Żarnowiec project. The two-hour battery is scheduled to be operational by the end of 2028 and is supported by a 17-year capacity-market contract.' },
+    { id:'h35', date:'2026-10-22', cos:['ALL'], region:'National', tech:['cross'], sub:'CAP', stage:'AUC',
+      assets:[],
+      title:'Date of pre-auctions for the additional auctions for individual quarters of delivery year 2028', publisher:'PSE',
+      links:[{label:'PSE — TSO announcement', url:'https://www.pse.pl/web/pse-eng/-/date-of-pre-auctions-for-the-additional-auctions-for-individual-quarters-of-delivery-year-2028', type:'official'}],
+      unit:'PSE — capacity market: 2028 additional auctions (pre-auctions)',
+      change:'PSE sets 5 Nov 2026 for the pre-auctions ahead of the 2028 additional capacity-market auctions',
+      why:'Sets the timetable for cross-border participation in the 2028 additional capacity auctions.',
+      summary:'PSE announced that the pre-auctions for the additional capacity-market auctions for the four quarters of delivery year 2028 will take place on 5 November 2026, from 08:00 to 15:59 (UTC+01:00). They decide the eligibility of physical cross-border units in the synchronous profile zone, Lithuania and Sweden to take part in those auctions. The four quarterly pre-auctions are held simultaneously, each requires its own financial collateral, and they run in PSE’s capacity-market participant portal.' },
+    { id:'h36', date:'2026-10-12', cos:['OTHER'], region:'Kuyavia-Pomerania', tech:['bess'], sub:'CON', stage:'CON',
+      assets:['Bydgoszcz BESS (Tavion)'],
+      title:'Tavion enters construction on its first battery park, six months after launch', publisher:'Tavion',
+      links:[{label:'Tavion — press release', url:'https://www.tavion.se/en/posts/tavion-enters-construction-on-its-first-battery-park-six-months-after-launch', type:'company'}],
+      unit:'Tavion — Bydgoszcz BESS (20 MW / 40 MWh)',
+      change:'Tavion starts construction of its first Polish battery park, a 20 MW / 40 MWh system in Bydgoszcz',
+      why:'Shows new independent developers moving storage from planning to construction, with grid connection targeted for 2027.',
+      summary:'Swedish developer Tavion began construction on 8 October of a 20 MW / 40 MWh two-hour battery park in Bydgoszcz, Kuyavian-Pomeranian Voivodeship; a second park in Luboń is to break ground within two weeks and a third to follow. The parks are financed by the €50m of equity and debt raised in September and will connect to the Enea Operator distribution grid, with grid connection targeted for 2027. Esix Polska is the balance-of-plant contractor, HyperStrong the battery integrator and Ayesa the owner’s engineer.' }
+  ];
+  NEW.forEach(function(n){
+    if (SIGNALS.some(function(s){ return s.id === n.id; })) return;
+    CLS[n.id] = { sub:n.sub, tech:n.tech };
+    ASSET_FIX[n.id] = n.assets.slice();
+    if (n.stage && window.STAGE_FIX) STAGE_FIX[n.id] = n.stage;
+    const x = normalise({ id:n.id, date:n.date, cos:n.cos, region:n.region, title:n.title, publisher:n.publisher,
+                          links:n.links, unit:n.unit, change:n.change, why:n.why, summary:n.summary });
+    SEED.push(x); SIGNALS.push(x);
+  });
   render();
 })();
 </script>
