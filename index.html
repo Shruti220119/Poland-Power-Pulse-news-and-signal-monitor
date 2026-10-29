@@ -309,7 +309,7 @@ button.tg.as:hover{background:#fbd3e1}
 .ppp-loading #view{opacity:.35;transition:opacity .2s}
 </style>
 <script>
-document.documentElement.setAttribute('data-ppp','v89');
+document.documentElement.setAttribute('data-ppp','v90');
 document.documentElement.classList.add('ppp-loading');
 window.__quiet=true;
 window.__parsed=new Promise(function(r){window.__parsedOk=r;});
@@ -3614,21 +3614,12 @@ window.SIG_EXCLUDE=new Set(['ic9']); /* EDF "not withdrawing" — no change, not
 })();
 </script>
 <script>
-/* ═══ v89: latest news added (items published 12–28 Oct 2026 that were missing from the dashboard) ═══
+/* ═══ v90: latest news added (items published 12–28 Oct 2026 that were missing from the dashboard) ═══
    Exact publisher headlines and direct article links. Ids h34–h36 use the "exact at source" path, so the
    News Feed shows the publisher headline and the Signal Monitor shows the "what changed" line.
-   Scope: storage build-out (PGE Gryfino, Tavion) and capacity-market process (PSE). */
+   Scope: storage build-out (Tavion) and capacity-market process (PSE). The PGE Gryfino item was removed because it is already in the published dashboard. */
 (function(){
   const NEW = [
-    { id:'h34', date:'2026-10-28', cos:['PGE'], region:'West Pomerania', tech:['bess'], sub:'CON', stage:'CON',
-      assets:['Gryfino BESS'],
-      title:'PGE breaks ground on 400 MW energy storage project in Poland', publisher:'Renewables Now',
-      links:[{label:'Renewables Now — article', url:'https://renewablesnow.com/news/pge-breaks-ground-on-400-mw-energy-storage-project-in-poland-1303836/', type:'press'},
-             {label:'Energy-Storage.News — also reported', url:'https://www.energy-storage.news/poland-greenvolt-sells-1-6gwh-of-projects-to-ar-pge-building-800mwh-with-fluence-tech/', type:'press'}],
-      unit:'PGE — Gryfino BESS (400 MW / 800 MWh)',
-      change:'PGE starts construction of the 400 MW / 800 MWh Gryfino battery in West Pomerania, due for operation by end-2028',
-      why:'Adds a second large-scale PGE battery after Żarnowiec; the project holds a 17-year capacity-market contract.',
-      summary:'PGE’s renewables unit has officially started construction of the 400 MW / 800 MWh Gryfino battery energy storage facility in Nowe Czarnowo, West Pomerania, using Fluence Smartstack technology (94 units of 10 MWh). A consortium of Spec Bau Polska and El Professional is building it; the investment exceeds PLN 1.14bn gross. It is PGE’s second large-scale storage facility after the 262 MW / 981 MWh Żarnowiec project. The two-hour battery is scheduled to be operational by the end of 2028 and is supported by a 17-year capacity-market contract.' },
     { id:'h35', date:'2026-10-22', cos:['ALL'], region:'National', tech:['cross'], sub:'CAP', stage:'AUC',
       assets:[],
       title:'Date of pre-auctions for the additional auctions for individual quarters of delivery year 2028', publisher:'PSE',
