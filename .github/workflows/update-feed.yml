@@ -15,7 +15,7 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v5
         with:
@@ -32,6 +32,9 @@ jobs:
             echo "::error::scripts/feed_fetcher.py is missing. Upload it into a folder named 'scripts' at the repo root."
             exit 1
           fi
+          if [ ! -f scripts/enrich_signals.py ]; then
+            echo "::warning::scripts/enrich_signals.py is missing - items will show the RSS teaser instead of the article text, capacity and delay. Upload it into 'scripts'."
+          fi
           mkdir -p data
           [ -f data/signals.json ] || echo '{"updated": null, "signals": []}' > data/signals.json
 
@@ -40,6 +43,15 @@ jobs:
         env:
           AZURE_TRANSLATOR_KEY: ${{ secrets.AZURE_TRANSLATOR_KEY }}
           AZURE_TRANSLATOR_REGION: ${{ secrets.AZURE_TRANSLATOR_REGION }}
+
+      - name: Read original articles (capacity, delay, what changed)
+        if: hashFiles('scripts/enrich_signals.py') != ''
+        run: python scripts/enrich_signals.py
+        continue-on-error: true        # a problem here must never stop the feed from being saved
+        env:
+          AZURE_TRANSLATOR_KEY: ${{ secrets.AZURE_TRANSLATOR_KEY }}
+          AZURE_TRANSLATOR_REGION: ${{ secrets.AZURE_TRANSLATOR_REGION }}
+
       - name: Save feed to repository
         run: |
           set +e
@@ -47,6 +59,7 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
           cp data/signals.json "$RUNNER_TEMP/signals.json"
+          [ -f data/source_cache.json ] && cp data/source_cache.json "$RUNNER_TEMP/source_cache.json"   # article cache written by enrich_signals.py
 
           for attempt in 1 2 3; do
             git fetch origin "$BRANCH" || { echo "::error::Could not fetch branch '$BRANCH'."; exit 1; }
@@ -54,6 +67,10 @@ jobs:
             mkdir -p data
             cp "$RUNNER_TEMP/signals.json" data/signals.json
             git add data/signals.json
+            if [ -f "$RUNNER_TEMP/source_cache.json" ]; then
+              cp "$RUNNER_TEMP/source_cache.json" data/source_cache.json
+              git add data/source_cache.json
+            fi
             if git diff --cached --quiet; then
               echo "No new items - nothing to commit."
               exit 0
