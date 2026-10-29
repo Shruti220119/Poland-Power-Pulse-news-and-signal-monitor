@@ -1370,19 +1370,7 @@ $('#reset').onclick = ()=>{Object.assign(F,{co:'',asset:'',tech:'',region:'',typ
    Reads signals.json (written by feed_fetcher.py) on load and every 5 minutes.
    Curated items stay built in; live items are merged on top. */
 const FEED_URL = 'data/signals.json', REFRESH_MS = 30*60*1000;  /* 30-minute refresh, matching the GitHub workflow */
-async function loadFeed(){
-  try{
-    const r = await fetch(FEED_URL,{cache:'no-store'}); if(!r.ok) throw 0;
-    const d = await r.json();
-    const ids = new Set(SEED.map(x=>x.id));
-    const live = (d.signals||[]).filter(x=>x && x.id && !ids.has(x.id) && (x.lang!=='pl' || x.translated)).map(x=>normalise({...x, auto:true}));
-    SIGNALS = SEED.concat(live);
-    lastUpdate = d.generated ? new Date(d.generated) : new Date();
-  }catch(e){ SIGNALS = SEED.slice(); lastUpdate = null; }
-  $('#clock').textContent = lastUpdate ? 'Live · updated '+lastUpdate.toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})
-                                       : 'Curated · '+new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
-  render();
-}
+async function loadFeed(){ /* v84: superseded by the single loader in the "exact headlines" block (cache-busting, stale-copy guard, last-good fallback) — two loaders were racing and the last one to finish decided the count */ }
 let nextAt = Date.now()+REFRESH_MS;
 loadFeed(); setInterval(()=>{nextAt=Date.now()+REFRESH_MS;loadFeed();}, REFRESH_MS);
 setInterval(()=>{ const m=Math.max(0,Math.round((nextAt-Date.now())/60000)); const el=document.getElementById('nextRef'); if(el) el.textContent='Next refresh in '+m+' min'; }, 30000);
@@ -1819,36 +1807,57 @@ document.addEventListener('keydown', e=>{ if(e.key==='Escape') nl('srcOverlay').
     view = v0;
   };
 
-  /* ── LOADER: data/headlines.json + data/signals.json (fixes v6 reading signals.json from the wrong folder) ── */
+  /* ── LOADER (v84): data/headlines.json + data/signals.json ──
+     • every request gets a unique ?t= so GitHub Pages' CDN cannot serve an older cached copy
+     • a copy OLDER than one already shown (this page or the last visit) is ignored → no flip-flopping counts
+     • if a request fails, the last good copy is kept instead of dropping all live items
+     • only one load runs at a time */
+  const stampOf = d => Date.parse((d && (d.updated || d.generated)) || '') || 0;
+  const LS_KEY = 'ppp_feed_v1';
+  const lsGet = () => { try { return JSON.parse(localStorage.getItem(LS_KEY) || 'null'); } catch (e) { return null; } };
+  const lsSet = d => { try { localStorage.setItem(LS_KEY, JSON.stringify(d)); } catch (e) {} };
   async function getJson(paths) {
     for (const p of paths) {
-      try { const r = await fetch(p, {cache: 'no-store'}); if (r.ok) return await r.json(); } catch (e) {}
+      try { const r = await fetch(p + (p.includes('?') ? '&' : '?') + 't=' + Date.now(), {cache: 'no-store'}); if (r.ok) return await r.json(); } catch (e) {}
     }
     return null;
   }
+  let feedBusy = false;
   loadFeed = async function () {
-    const [hj, sj] = await Promise.all([getJson(['data/headlines.json']), getJson(['data/signals.json', 'signals.json'])]);
-    if (hj && hj.items) {
-      Object.entries(hj.items).forEach(([id, v]) => { if (v && v.title && !(H[id] && H[id].source === 'manual')) H[id] = v; else if (v && v.url && !H[id]) H[id] = {url: v.url}; });
-      BAD = new Set(hj.bad_links || []);
-    }
-    if (sj) {
-      const ids = new Set(SEED.map(x => x.id));
-      const live = (sj.signals || []).filter(x => x && x.id && !ids.has(x.id) && (x.lang !== 'pl' || x.translated)).map(x => normalise({...x, auto: true}));
-      SIGNALS = SEED.concat(live);
-      const ts = sj.updated || sj.generated;
-      lastUpdate = ts ? new Date(ts) : new Date();
-    } else { SIGNALS = SEED.slice(); lastUpdate = null; }
-    reEnrichAll();
-    $('#clock').textContent = lastUpdate
-      ? 'Live · updated ' + lastUpdate.toLocaleString('en-GB', {day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'})
-      : 'Curated · ' + new Date().toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'});
-    render();
+    if (feedBusy) return; feedBusy = true;
+    try {
+      const [hj, fetched] = await Promise.all([getJson(['data/headlines.json']), getJson(['data/signals.json', 'signals.json'])]);
+      if (hj && hj.items) {
+        Object.entries(hj.items).forEach(([id, v]) => { if (v && v.title && !(H[id] && H[id].source === 'manual')) H[id] = v; else if (v && v.url && !H[id]) H[id] = {url: v.url}; });
+        BAD = new Set(hj.bad_links || []);
+      }
+      let sj = fetched, source = 'live';
+      const cached = lsGet();
+      const known = Math.max(window.__feedStamp || 0, stampOf(cached));
+      if (!sj) { sj = window.__feedLast || cached; source = 'saved'; }                       /* request failed → last good copy */
+      else if (stampOf(sj) && stampOf(sj) < known) {                                         /* stale copy from the CDN → keep the newer one */
+        sj = (window.__feedLast && stampOf(window.__feedLast) >= known) ? window.__feedLast : (stampOf(cached) >= known ? cached : sj);
+        source = 'saved';
+      }
+      if (sj) {
+        window.__feedLast = sj; window.__feedStamp = Math.max(known, stampOf(sj));
+        if (source === 'live') lsSet(sj);
+        const ids = new Set(SEED.map(x => x.id));
+        const live = (sj.signals || []).filter(x => x && x.id && !ids.has(x.id) && (x.lang !== 'pl' || x.translated)).map(x => normalise({...x, auto: true}));
+        SIGNALS = SEED.concat(live);
+        const ts = sj.updated || sj.generated;
+        lastUpdate = ts ? new Date(ts) : new Date();
+      } else { SIGNALS = SEED.slice(); lastUpdate = null; }
+      reEnrichAll();
+      $('#clock').textContent = lastUpdate
+        ? 'Live · updated ' + lastUpdate.toLocaleString('en-GB', {day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'}) + (source === 'saved' ? ' (saved copy)' : '')
+        : 'Curated · ' + new Date().toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'});
+      render();
+    } finally { feedBusy = false; }
   };
 
   reEnrichAll();
   loadFeed();
-  setTimeout(loadFeed, 3000);   /* re-run once in case the original v6 loader finishes after this one */
 })();
 
 </script>
@@ -3069,10 +3078,13 @@ window.POL_EXCLUDE=new Set(['e3','w4','w5','n14','h27','u11','h24','n15','o3','x
    about an off-scope topic (history, war, politics, defence, opinion, society, sport).
    Applies to News Feed, Signal Monitor and Newsletter. Curated items are unaffected. */
 (function(){
-  const IN=/energ|electric|power (plant|station|market|grid|sector|price|generation|purchase)|\bgrid\b|\bwind\b|wind farm|offshore|onshore|solar|\bpv\b|photovolt|batter|storage|\bbess\b|nuclear|\bsmr\b|reactor|\bgas\b|\blng\b|ccgt|ocgt|peaker|\bcoal\b|lignite|\bheat|\bchp\b|cogenerat|hydrogen|biomethane|capacity market|capacity auction|\bcfd\b|renewabl|\bppa\b|tariff|interconnect|transmission|substation|turbine|prąd|wiatr|słoneczn|fotowolt|magazyn|jądrow|atomow|węgl|ciepł|ciepl|sieci|gazow|\b(pge|enea|energa|orlen|tauron|pej|pse|ure|ze pak|polenergia|synthos|osge|equinor|ørsted|orsted|rwe|engie|axpo|fortum|edpr|westinghouse|bechtel|ge vernova)\b|iberdrola|greenvolt|r\.power|\bdri\b|dtek|actis|northland|ocean winds|statkraft|qair|enefit|\bcez\b|čez|e\.on|vattenfall|totalenergies|baltic power|electrum|photon energy|energy law|prawo energetyczne|\bres act\b|ustaw\w* o odnawialnych|nowelizacj\w* ustawy|projekt ustawy|\bnecp\b|\bkpeik\b|\bpep ?2040\b|\bets ?2?\b|state aid|pomoc publiczn|capacity mechanism|market design|market reform|reforma rynku|price freeze|derogation|support scheme|system wsparcia|deregulac|public consultation|draft (law|bill|act|amendment)/i;
-  const OUT=/\bwwii\b|world war|second world war|nazi|holocaust|reparation|compensation .*victims|\bvictims\b|\[opinion\]|\bopinion\b|\bop-ed\b|\bnato\b|military|\barmy\b|apache|missile|defen[cs]e (minister|spending|industry)|security forum|ready to fight|coalition partner|quits .*government|\belection\b|\bpresidential (race|campaign)\b|migra|refugee|football|\bsport|olympic|museum|exhibition|\bfilm\b|church|abortion|court rul|\bcrime\b|police|murder|weather forecast/i;
+  const IN=/energ|electric|power (plant|station|market|grid|sector|price|generation|purchase)|\bgrid\b|\bwind\b|wind farm|offshore|onshore|solar|\bpv\b|photovolt|batter|storage|\bbess\b|nuclear|\bsmr\b|reactor|\bgas\b|\blng\b|ccgt|ocgt|peaker|\bcoal\b|lignite|\bheat|\bchp\b|cogenerat|hydrogen|biomethane|capacity market|capacity auction|\bcfd\b|renewabl|\bppa\b|tariff|interconnect|transmission|substation|turbine|prąd|wiatr|słoneczn|fotowolt|magazyn|jądrow|atomow|węgl|ciepł|ciepl|sieci|gazow|\b(pge|enea|energa|orlen|tauron|pej|pse|ure|ze pak|polenergia|synthos|osge|equinor|ørsted|orsted|rwe|engie|axpo|fortum|edpr|westinghouse|bechtel|ge vernova)\b|węgiel|\bgaz(u|ie|em|y)?\b|gazów|turbin|bateri|akumulator|słonecz|\batom\b|iberdrola|greenvolt|r\.power|\bdri\b|dtek|actis|northland|ocean winds|statkraft|qair|enefit|\bcez\b|čez|e\.on|vattenfall|totalenergies|baltic power|electrum|photon energy|energy law|prawo energetyczne|\bres act\b|ustaw\w* o odnawialnych|nowelizacj\w* ustawy|projekt ustawy|\bnecp\b|\bkpeik\b|\bpep ?2040\b|\bets ?2?\b|state aid|pomoc publiczn|capacity mechanism|market design|market reform|reforma rynku|price freeze|derogation|support scheme|system wsparcia|deregulac|public consultation|draft (law|bill|act|amendment)/i;
+  const OUT=/\bwwii\b|world war|second world war|nazi|holocaust|reparation|compensation .*victims|\bvictims\b|\[opinion\]|\bopinion\b|\bop-ed\b|\bnato\b|military|\barmy\b|apache|missile|defen[cs]e (minister|spending|industry)|security forum|ready to fight|coalition partner|quits .*government|\belection\b|\bpresidential (race|campaign)\b|migra|refugee|football|\bsport|olympic|museum|exhibition|\bfilm\b|church|abortion|court rul|\bcrime\b|police|murder|weather forecast|\bpis\b|konfederacj|\blewica\b|\blewicy\b|\bpsl\b|polska 2050|prawo i sprawiedliwo|platform\w* obywatelsk|laureat\w*|plebiscyt|\bnagrod\w*|\bgala\b|\bgali\b/i;
+  /* v84: court / lawsuit stories are out of scope unless they concern a permit, decision, law, tariff or auction */
+  const OFF_SOFT=/\bpozew|\bpozw[aeu]|\bwyrok|lawsuit|\bsues?\b/i;
+  const SOFT_EXCEPT=/decyzj|pozwolen|koncesj|środowisk|ustaw|rozporządz|aukcj|taryf|licenc|przetarg|\bure\b|\bwsa\b|\bnsa\b|permit|licen[cs]e|auction|tariff|environmental decision/i;
   const head=s=>(s.title||'')+' '+(s.title_pl||'')+' '+(s.src_title||'')+' '+(s.title_clear||'');   /* v83: vague headlines are judged with their descriptive title */
-  const offScope=s=>{ if(!s||!s.auto) return false; const h=head(s); return OUT.test(h) || !IN.test(h); };
+  const offScope=s=>{ if(!s||!s.auto) return false; const h=head(s); return OUT.test(h) || !IN.test(h) || (OFF_SOFT.test(h) && !SOFT_EXCEPT.test(h)); };
   window.offScopeLive=offScope;
   const _p=passes; passes=function(s,skip){ if(offScope(s)) return false; return _p(s,skip); };
   render();
