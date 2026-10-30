@@ -2537,7 +2537,7 @@ window.POL_EXCLUDE=new Set(['e3','w4','w5','n14','h27','u11','h24','n15','o3','x
     if(key==='asset') return (s.assets||[]).join(', ');
     return s.region||'National';
   }
-  /* v47: signal card = Event · What changed · Affected entities · Source · Confidence · Status */
+  /* v47: signal card = Event · What changed/ Specifics · Affected entities · Source · Confidence · Status */
   const EV_TECH={offshore:'Offshore wind',onshore:'Onshore wind',solar:'Solar PV',gas:'Gas-fired',nuclear:'Nuclear',bess:'Battery storage',hydro:'Pumped hydro',chp:'CHP / heat',biomass:'Biomass',h2:'Hydrogen'};
   const EV_STAGE={PLAN:'project announced',PERM:'permit or licence',AUC:'support award',FIN:'investment decision / financing',PROC:'contract award',MA:'acquisition / divestment',CON:'construction milestone',COM:'commissioning',SET:'project delay or disruption'};
   const PORTFOLIO_EXIT=/\b(exit|exits|exiting)\b|\b(weighs?|weighing|explores?|exploring|considers?|considering|mulls?|mulling|eyes)\s+(a\s+|the\s+)?(full\s+|complete\s+)?(sale|disposal|divestment)\s+of\s+(all\s+|its\s+|the\s+|entire\s+)*(polish|poland)|\bsell(s|ing)?\s+(all|its entire|its whole)\b|\bpull(s|ing)?\s+out\s+of\s+poland|\bwithdraw(s|ing)?\s+from\s+(the\s+)?polish\s+market/i;
