@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-30T15:21:07+00:00",
+ "updated": "2026-10-30T16:15:23+00:00",
  "signals": [
   {
    "id": "live-a111f6a1f9",
@@ -10,6 +10,25 @@
     {
      "label": "Notes From Poland — article",
      "url": "https://notesfrompoland.com/2026/10/30/polish-left-seeks-to-end-state-funding-of-priests-social-contributions-as-government-reform-stalls/",
+     "type": "press"
+    }
+   ],
+   "cos": [
+    "ALL"
+   ],
+   "publisher": "Notes From Poland",
+   "lang": "en",
+   "region": "National"
+  },
+  {
+   "id": "live-2673109114",
+   "date": "2026-10-30",
+   "title": "Poland approves first fast-track renewable energy zones",
+   "summary": "New fast-track zones aim to cut project preparation times from three to four years to as little as one year.",
+   "links": [
+    {
+     "label": "Notes From Poland — article",
+     "url": "https://notesfrompoland.com/2026/10/30/poland-approves-first-fast-track-renewable-energy-zones/",
      "type": "press"
     }
    ],
