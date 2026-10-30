@@ -1,6 +1,25 @@
 {
- "updated": "2026-10-30T13:29:58+00:00",
+ "updated": "2026-10-30T14:27:17+00:00",
  "signals": [
+  {
+   "id": "live-a111f6a1f9",
+   "date": "2026-10-30",
+   "title": "Polish Left seeks to end state funding of priests’ social contributions as government reform stalls",
+   "summary": "The party says its \"patience is running out\", but coalition partner PSL will oppose the bill.",
+   "links": [
+    {
+     "label": "Notes From Poland — article",
+     "url": "https://notesfrompoland.com/2026/10/30/polish-left-seeks-to-end-state-funding-of-priests-social-contributions-as-government-reform-stalls/",
+     "type": "press"
+    }
+   ],
+   "cos": [
+    "ALL"
+   ],
+   "publisher": "Notes From Poland",
+   "lang": "en",
+   "region": "National"
+  },
   {
    "id": "live-a6b1577655",
    "date": "2026-10-29",
