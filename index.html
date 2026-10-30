@@ -153,7 +153,7 @@ button.tg.as:hover{background:#fbd3e1}
 .news h3 a:hover{color:var(--red)}
 .news p{font-size:12px;color:#3b3442;line-height:1.55;flex:1}
 .news .chg{font-size:11px;font-weight:600;color:var(--ink);background:var(--bg);border-radius:6px;padding:6px 9px;margin:10px 0 8px}
-.news .chg::before{content:"▲ What changed/ Specifics: ";color:var(--pc);font-weight:700}
+.news .chg::before{content:"▲ What changed: ";color:var(--pc);font-weight:700}
 .news .nf{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
 
 /* RAIL */
@@ -309,7 +309,7 @@ button.tg.as:hover{background:#fbd3e1}
 .ppp-loading #view{opacity:.35;transition:opacity .2s}
 </style>
 <script>
-document.documentElement.setAttribute('data-ppp','v94');
+document.documentElement.setAttribute('data-ppp','v95');
 document.documentElement.classList.add('ppp-loading');
 window.__quiet=true;
 window.__parsed=new Promise(function(r){window.__parsedOk=r;});
@@ -1304,7 +1304,7 @@ function linksHtml(s){
     return `<a class="slink ${esc(l.type)}" href="${esc(l.url)}" target="_blank" rel="noopener">${pre} ${esc(l.label)}</a>`; }).join('');
 }
 const catPills = s => `<span class="pill pil" style="--pc:${SC[s.cat].col}">${SC[s.cat].ico} ${SC[s.cat].label}</span><span class="pill cat">${SC[s.sub].label}</span>`;
-/* Signal analysis (what changed/ Specifics · why it matters · affected) is shown only for these categories */
+/* Signal analysis (what changed · why it matters · affected) is shown only for these categories */
 const ANALYSIS_CATS = new Set(['POL','PRJ','GRD']);
 const hasAnalysis = s => ANALYSIS_CATS.has(s.cat);
 function card(s){
@@ -1315,7 +1315,7 @@ function card(s){
       <span class="c-date">${fmtDate(s.date)} · ${ago(s.date)}</span></div>
     <h3>${esc(s.title)}</h3>
     ${full && (s.change||s.why) ? `<div class="cw">
-      ${s.change?`<div class="sg chg"><label>What changed/ Specifics</label><b>${esc(s.change)}</b></div>`:''}
+      ${s.change?`<div class="sg chg"><label>What changed</label><b>${esc(s.change)}</b></div>`:''}
       ${s.why?`<div class="sg why"><label>Why it matters</label><p>${esc(s.why)}</p></div>`:''}
     </div>` : ''}
     <p class="sum"><span class="sl">Summary</span>${esc(s.summary)}</p>
@@ -1470,7 +1470,7 @@ function nlBuild(){
         body += `<div style="margin:0 0 13px">
           <div style="font-family:Arial,sans-serif;font-size:10pt;font-weight:bold;line-height:1.35;color:#1F1F1F">${esc(s.title)} (${s.cos.map(coLabel).join(' / ')}, ${fmtShort(s.date)})</div>
           <div style="font-family:Arial,sans-serif;font-size:10pt;line-height:1.5;color:#000;margin-top:2px">${esc(s.summary)}</div>
-            ${hasAnalysis(s) ? `<div style="font-family:Arial,sans-serif;font-size:9pt;line-height:1.45;color:#43224d;margin-top:3px"><b>What changed/ Specifics:</b> ${esc(s.change)}<br><b>Why it matters:</b> ${esc(s.why)}<br><b>Affected:</b> ${s.tech.map(t=>TECH_LABEL[t]).join(', ')} · ${s.cos.filter(c=>c!=='ALL').map(coLabel).join(', ')||'Market-wide'} · ${s.assets.join(', ')||'Portfolio'} · ${esc(s.region)}</div>` : `<div style="font-family:Arial,sans-serif;font-size:9pt;color:#43224d;margin-top:3px"><b>Category:</b> ${SC[s.sub].label}</div>`}
+            ${hasAnalysis(s) ? `<div style="font-family:Arial,sans-serif;font-size:9pt;line-height:1.45;color:#43224d;margin-top:3px"><b>What changed:</b> ${esc(s.change)}<br><b>Why it matters:</b> ${esc(s.why)}<br><b>Affected:</b> ${s.tech.map(t=>TECH_LABEL[t]).join(', ')} · ${s.cos.filter(c=>c!=='ALL').map(coLabel).join(', ')||'Market-wide'} · ${s.assets.join(', ')||'Portfolio'} · ${esc(s.region)}</div>` : `<div style="font-family:Arial,sans-serif;font-size:9pt;color:#43224d;margin-top:3px"><b>Category:</b> ${SC[s.sub].label}</div>`}
           ${links?`<div style="font-family:Arial,sans-serif;font-size:9pt;margin-top:3px;color:#595959">Read more: ${links}</div>`:''}
         </div>`;
       });
@@ -1761,7 +1761,7 @@ document.addEventListener('keydown', e=>{ if(e.key==='Escape') nl('srcOverlay').
       s.src_title = s.title_pl || s.title; s.src_en = s.title_pl ? s.title : '';
       s.src_url = (h && h.url) || firstWorkingLink(s);
       s.in_feed = true;
-      s.sig_title = s.change || s.title;            /* source title is exact → use rephrased 'what changed/ Specifics' */
+      s.sig_title = s.change || s.title;            /* source title is exact → use rephrased 'what changed' */
     } else {                                        /* not yet verified → shown with curated title until the daily check supplies the exact one */
       s.src_title = s.title_pl || s.title; s.src_en = s.title_pl ? s.title : '';
       s.src_url = (h && h.url) || firstWorkingLink(s);
@@ -1799,7 +1799,7 @@ document.addEventListener('keydown', e=>{ if(e.key==='Escape') nl('srcOverlay').
         <span class="c-date">${fmtDate(s.date)} · ${ago(s.date)}</span></div>
       <h3>${esc(s.hl_fix||s.sig_title)}</h3>
       ${full && !s.auto && (s.change || s.why) ? `<div class="cw">
-        ${s.change ? `<div class="sg chg"><label>What changed/ Specifics</label><b>${esc(s.change)}</b></div>` : ''}
+        ${s.change ? `<div class="sg chg"><label>What changed</label><b>${esc(s.change)}</b></div>` : ''}
         ${s.why ? `<div class="sg why"><label>Why it matters</label><p>${esc(s.why)}</p></div>` : ''}
       </div>` : ''}
       ${summary ? `<p class="sum"><span class="sl">Summary</span>${esc(summary)}</p>` : ''}
@@ -2310,7 +2310,7 @@ renderSignals=function(){
     keys.forEach(k=>{const g=list.filter(s=>sigType(s)===k);
       body+=`<div class="grp"><h2 style="color:${k.startsWith('X:')?'#777':tCol(k)}">${esc(typeLabel(k))}</h2><span class="gn">${g.length}</span><span class="gl"></span></div>`+g.map(dCard).join('');});
   } else body=list.map(dCard).join('');
-  $('#view').innerHTML=`<section class="signal-intro"><div class="si-copy"><h2>What changed/ Specifics?</h2><p>Material developments compared with the previous known position</p></div>
+  $('#view').innerHTML=`<section class="signal-intro"><div class="si-copy"><h2>What changed?</h2><p>Material developments compared with the previous known position</p></div>
    <div class="si-count"><b>${list.length}</b>visible signal${list.length===1?'':'s'}</div>
    <div class="si-sort"><span>Sort</span><button data-ds="date" class="${sortMode!=='cat'?'on':''}">Newest</button><button data-ds="cat" class="${sortMode==='cat'?'on':''}">Signal Type</button></div>
    ${sup?`<div class="si-note">${sup} item${sup===1?'':'s'} hidden as restatements of an existing position (no change in status, capacity, value, contractor or schedule).</div>`:''}</section>`+
@@ -2357,7 +2357,7 @@ render();
 .gsb-watch{background:#f4f0f6;border:1px dashed #cdbcd6;border-radius:9px;padding:10px 13px;margin-bottom:10px}.gsb-watch label::before{content:"◔ ";color:var(--purple)}
 .gsb-watch ul{margin:0;padding-left:18px}.gsb-watch li{font-size:12px;line-height:1.5;color:var(--ink)}
 @media(max-width:820px){.gsb-lens{grid-template-columns:1fr}}
-.gsb-rows{display:grid;grid-template-columns:150px 1fr;margin:0;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.gsb-rows{display:grid;grid-template-columns:185px 1fr;margin:0;border:1px solid var(--line);border-radius:9px;overflow:hidden}
 .gsb-rows dt{font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);padding:10px 12px;background:#faf8fb;border-bottom:1px solid var(--line)}
 .gsb-rows dd{margin:0;padding:9px 13px;border-bottom:1px solid var(--line);font-size:12.5px;line-height:1.5;min-width:0}
 .gsb-rows dt:nth-last-of-type(1),.gsb-rows dd:last-child{border-bottom:0}
@@ -2537,7 +2537,7 @@ window.POL_EXCLUDE=new Set(['e3','w4','w5','n14','h27','u11','h24','n15','o3','x
     if(key==='asset') return (s.assets||[]).join(', ');
     return s.region||'National';
   }
-  /* v47: signal card = Event · What changed/ Specifics · Affected entities · Source · Confidence · Status */
+  /* v47: signal card = Event · What changed · Affected entities · Source · Confidence · Status */
   const EV_TECH={offshore:'Offshore wind',onshore:'Onshore wind',solar:'Solar PV',gas:'Gas-fired',nuclear:'Nuclear',bess:'Battery storage',hydro:'Pumped hydro',chp:'CHP / heat',biomass:'Biomass',h2:'Hydrogen'};
   const EV_STAGE={PLAN:'project announced',PERM:'permit or licence',AUC:'support award',FIN:'investment decision / financing',PROC:'contract award',MA:'acquisition / divestment',CON:'construction milestone',COM:'commissioning',SET:'project delay or disruption'};
   const PORTFOLIO_EXIT=/\b(exit|exits|exiting)\b|\b(weighs?|weighing|explores?|exploring|considers?|considering|mulls?|mulling|eyes)\s+(a\s+|the\s+)?(full\s+|complete\s+)?(sale|disposal|divestment)\s+of\s+(all\s+|its\s+|the\s+|entire\s+)*(polish|poland)|\bsell(s|ing)?\s+(all|its entire|its whole)\b|\bpull(s|ing)?\s+out\s+of\s+poland|\bwithdraw(s|ing)?\s+from\s+(the\s+)?polish\s+market/i;
@@ -3412,7 +3412,7 @@ window.SIG_EXCLUDE=new Set(['ic9']); /* EDF "not withdrawing" — no change, not
 /* ═══ v76: complete headlines in the Signal Monitor ═══
    Live-feed items were given a shortened Signal Monitor headline (cut to 14 words with "…",
    text after a dash removed, company name prefixed). They now show the full publisher headline.
-   Any remaining headline or "What changed/ Specifics" line ending in "…" is replaced with the full text. */
+   Any remaining headline or "What changed" line ending in "…" is replaced with the full text. */
 (function(){
   const cut=t=>/(…|\.\.\.)\s*$/.test(t||'');
   function fix(s){
@@ -3610,7 +3610,7 @@ window.SIG_EXCLUDE=new Set(['ic9']); /* EDF "not withdrawing" — no change, not
 <script>
 /* ═══ v89: latest news added (items published 12–28 Oct 2026 that were missing from the dashboard) ═══
    Exact publisher headlines and direct article links. Ids h34–h36 use the "exact at source" path, so the
-   News Feed shows the publisher headline and the Signal Monitor shows the "what changed/ Specifics" line.
+   News Feed shows the publisher headline and the Signal Monitor shows the "what changed" line.
    Scope: storage build-out (Tavion) and capacity-market process (PSE). The PGE Gryfino item was removed (already published). */
 (function(){
   const NEW = [
@@ -3667,17 +3667,17 @@ window.SIG_EXCLUDE=new Set(['ic9']); /* EDF "not withdrawing" — no change, not
 </script>
 <script>
 /* ═══ v92: live items are described from the ORIGINAL article, not the RSS teaser ═══
-   Problem: "What changed/ Specifics", Event, Asset, Technology and Company were built from the RSS excerpt — a
+   Problem: "What changed", Event, Asset, Technology and Company were built from the RSS excerpt — a
    truncated teaser such as "…scheduled to […] The post X appeared first on Y". It repeated the headline,
    carried feed boilerplate, and picked up passing mentions (a Fluence portfolio line tagged other assets).
    Now, for every live item:
      1. feed boilerplate is removed ("The post … appeared first on …", "[…]", "Read more", HTML entities)
-     2. "What changed/ Specifics" = the most informative sentence of the article lead (written by data/enrich_signals.py
+     2. "What changed" = the most informative sentence of the article lead (written by data/enrich_signals.py
         into source_text / change); items not read yet fall back to the cleaned excerpt, then to the headline
      3. Technology, Asset and Company are read from the headline + the article LEAD only (first 2–3 sentences)
         — never from passing mentions further down the page
      4. the stage (Event) uses strong cues from the source wording (groundbreaking, monopiles arrive, …)
-     5. the text under "What changed/ Specifics" never repeats the "What changed/ Specifics" sentence                          */
+     5. the text under "What changed" never repeats the "What changed" sentence                          */
 (function(){
   /* ---------- text helpers ---------- */
   const POST_RX=/\s*\bThe post\b[\s\S]{3,300}?\bappeared first on\b[^\n]{1,70}?\s?\.(?=\s|$)|\s*\bThe post\b[\s\S]{3,300}?\bappeared first on\b[^\n]{1,70}$/i;
@@ -3765,7 +3765,7 @@ window.SIG_EXCLUDE=new Set(['ic9']); /* EDF "not withdrawing" — no change, not
       const txt=title+' '+lead;
       s.assets=[...new Set(ASSETS.filter(x=>x[1].test(txt)).map(x=>x[0]))];
     }
-    s.cos=cosFrom(title+' '+change,s.cos); s.co=s.cos[0];      /* companies: headline + the "what changed/ Specifics" sentence only */
+    s.cos=cosFrom(title+' '+change,s.cos); s.co=s.cos[0];      /* companies: headline + the "what changed" sentence only */
     /* stage */
     const st=stageFrom(title+' '+change);
     if(st&&window.STAGE_FIX) STAGE_FIX[s.id]=st;
@@ -3774,7 +3774,7 @@ window.SIG_EXCLUDE=new Set(['ic9']); /* EDF "not withdrawing" — no change, not
   window.groundItem=groundItem;
   window.__ground={clean,split,techFrom,cosFrom,stageFrom,jac};
 
-  /* text under "What changed/ Specifics": whatever the "What changed/ Specifics" sentence does not already say */
+  /* text under "What changed": whatever the "What changed" sentence does not already say */
   window.detailText=function(s){
     const ch=s.change||'';
     return split(clean(s.summary||'')).filter(p=>jac(p,ch)<0.8&&jac(p,s.title||'')<0.8).join(' ');
@@ -3891,13 +3891,13 @@ details.rv[open]>summary{border-bottom:1px solid var(--line)}
 </style>
 <script>
 /* ═══ v94: every Signal Monitor field is attributed to its source + analyst review ═══
-   1) EVIDENCE — "Event", "What changed/ Specifics" and each "Affected entities" value carry numbered references [n]
+   1) EVIDENCE — "Event", "What changed" and each "Affected entities" value carry numbered references [n]
       to the source that states them; the numbered list sits at the end of the signal ("Evidence & sources").
       When an earlier news item is used as a reference (previous status, original date of a delay …),
       that earlier item and its source are listed under "Earlier news referenced".
-   2) DETAIL TEXT under "What changed/ Specifics" shows only factual sentences from the summary; commentary sentences
+   2) DETAIL TEXT under "What changed" shows only factual sentences from the summary; commentary sentences
       ("could", "signals", "investors should watch" …) are not shown in the Signal Monitor.
-   3) ANALYST REVIEW — each signal has an "Analyst review" panel. The analyst can edit Event, What changed/ Specifics,
+   3) ANALYST REVIEW — each signal has an "Analyst review" panel. The analyst can edit Event, What changed,
       every affected-entity value and the supporting sources, set a review status, and add a note.
       Edits are saved in this browser (localStorage) and can be exported/imported as JSON. A file
       data/analyst_reviews.json (same format) is loaded at start so reviews can be shared via the repository.
@@ -3983,7 +3983,7 @@ details.rv[open]>summary{border-bottom:1px solid var(--line)}
     const ref=(k,label)=>{ const us=fieldSrc(k).filter(Boolean); if(!us.length) return '';
       const ns=us.map(u=>{ if(!num.has(u)) num.set(u,num.size+1); if(!uses.has(u)) uses.set(u,[]); if(!uses.get(u).includes(label)) uses.get(u).push(label); return num.get(u); });
       return `<sup class="ev-ref">[${ns.map(n=>`<a href="#ev-${esc(s.id)}-${n}">${n}</a>`).join(',')}]</sup>`; };
-    const evRef=ref('event','Event'), chRef=ref('change','What changed/ Specifics'), dtRef=detail?ref('detail','Detail'):'';
+    const evRef=ref('event','Event'), chRef=ref('change','What changed / Specifics'), dtRef=detail?ref('detail','Detail'):'';
     const entHtml=ents.map(([k,l,v,ed])=>`<span><em>${esc(l)}</em>${esc(v)}${ed?'<span class="rv-edited">edited</span>':''}${ref(k.startsWith('x_')?'entities':k,l)}</span>`).join('');
 
     /* earlier news referenced */
@@ -4010,7 +4010,7 @@ details.rv[open]>summary{border-bottom:1px solid var(--line)}
       <h3>${esc(model.title)}</h3>
       <dl class="gsb-rows">
         <dt>Event</dt><dd><b>${esc(event)}</b>${edited('event')?'<span class="rv-edited">edited</span>':''}${evRef}</dd>
-        <dt>What changed/ Specifics</dt><dd><b>${esc(change)}</b>${edited('change')?'<span class="rv-edited">edited</span>':''}${chRef}${detail?`<div class="gsb-summary">${esc(detail)}${dtRef}</div>`:''}</dd>
+        <dt>What changed / Specifics</dt><dd><b>${esc(change)}</b>${edited('change')?'<span class="rv-edited">edited</span>':''}${chRef}${detail?`<div class="gsb-summary">${esc(detail)}${dtRef}</div>`:''}</dd>
         <dt>${esc(model.entLabel)}</dt><dd class="gsb-ents">${entHtml}</dd>
         <dt>Evidence &amp; sources</dt><dd class="ev-box"><ul class="ev-list">${list}</ul>${priorHtml}${otherHtml}
           <div class="ev-stat"><span class="ev-badge ${cls}">${esc(txt)}</span><span>${who}</span></div>${notes}</dd>
@@ -4028,11 +4028,11 @@ details.rv[open]>summary{border-bottom:1px solid var(--line)}
       <form class="rv-form" data-rvf="${esc(s.id)}">
         <label>Review status<select name="status">${Object.entries(STAT).map(([k,[,t]])=>`<option value="${k}" ${st===k?'selected':''}>${t}</option>`).join('')}</select></label>
         <label>Reviewer<input name="reviewer" value="${esc(R.reviewer||'')}" placeholder="Name or initials"></label>
-        <div class="grp">Event &amp; what changed/ Specifics</div>
+        <div class="grp">Event &amp; what changed / specifics</div>
         <label class="full">Event<input name="event" value="${v('event',orig.event)}"></label>
-        <label class="full">What changed/ Specifics<textarea name="change">${v('change',orig.change)}</textarea></label>
-        <label class="full">Detail (factual text under “What changed/ Specifics”)<textarea name="detail">${v('detail',orig.detail)}</textarea></label>
-        <label class="full">Sources for Event &amp; What changed/ Specifics <span class="hint">One per line: Label | https://… — replaces the default attribution</span><textarea name="src_change" placeholder="PAP Biznes | https://…">${esc(R.src_change||'')}</textarea></label>
+        <label class="full">What changed / Specifics<textarea name="change">${v('change',orig.change)}</textarea></label>
+        <label class="full">Detail (factual text under “What changed”)<textarea name="detail">${v('detail',orig.detail)}</textarea></label>
+        <label class="full">Sources for Event &amp; What changed <span class="hint">One per line: Label | https://… — replaces the default attribution</span><textarea name="src_change" placeholder="PAP Biznes | https://…">${esc(R.src_change||'')}</textarea></label>
         <div class="grp">Affected entities</div>
         ${entIn}
         <label class="full">Additional entities <span class="hint">One per line: Label: value</span><textarea name="extra_ents" placeholder="Contractor: Polimex Mostostal">${esc(extra)}</textarea></label>
