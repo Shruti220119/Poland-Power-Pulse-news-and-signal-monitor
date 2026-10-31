@@ -1,6 +1,25 @@
 {
- "updated": "2026-10-31T11:33:45+00:00",
+ "updated": "2026-10-31T12:32:30+00:00",
  "signals": [
+  {
+   "id": "live-35dd4b2b01",
+   "date": "2026-10-31",
+   "title": "Polish president in physical confrontation with judges amid power struggle at constitutional court",
+   "summary": "Karol Nawrocki was involved in a confrontation at the doors to the court.",
+   "links": [
+    {
+     "label": "Notes From Poland — article",
+     "url": "https://notesfrompoland.com/2026/10/31/polish-president-in-physical-confrontation-with-judges-amid-power-struggle-at-constitutional-court/",
+     "type": "press"
+    }
+   ],
+   "cos": [
+    "ALL"
+   ],
+   "publisher": "Notes From Poland",
+   "lang": "en",
+   "region": "National"
+  },
   {
    "id": "live-a111f6a1f9",
    "date": "2026-10-30",
