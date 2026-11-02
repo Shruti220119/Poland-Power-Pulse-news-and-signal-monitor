@@ -1,6 +1,44 @@
 {
- "updated": "2026-11-02T15:19:30+00:00",
+ "updated": "2026-11-02T16:27:34+00:00",
  "signals": [
+  {
+   "id": "live-e8da7081b1",
+   "date": "2026-11-02",
+   "title": "Over 50 industry groups ask Brussels to suspend 2030 renewable hydrogen target for industry",
+   "summary": "An appeal led by the Polish Chamber of the Chemical Industry asks the European Commission to pause the binding 2030 RFNBO target for industry and reassess the 2035 goal. The post Over 50 industry groups ask Brussels to suspend 2030 renewable hydrogen target for industry appeared first on Baltic Wind .",
+   "links": [
+    {
+     "label": "Baltic Wind — article",
+     "url": "https://balticwind.eu/over-50-industry-groups-ask-brussels-to-suspend-2030-renewable-hydrogen-target-for-industry/",
+     "type": "press"
+    }
+   ],
+   "cos": [
+    "ALL"
+   ],
+   "publisher": "Baltic Wind",
+   "lang": "en",
+   "region": "National"
+  },
+  {
+   "id": "live-23edb6538f",
+   "date": "2026-11-02",
+   "title": "PEJ applies for early works permit for nuclear power plant",
+   "summary": "Polskie Elektrownie Jądrowe has applied to the head of the Pomeranian Voivodeship for a permit to start early works required for the construction of Poland's first nuclear power plant at the Lubiatowo-Kopalino site in the Choczewo municipality.",
+   "links": [
+    {
+     "label": "World Nuclear News — article",
+     "url": "https://www.world-nuclear-news.org/articles/pej-applies-for-early-works-permit-for-nuclear-power-plant",
+     "type": "press"
+    }
+   ],
+   "cos": [
+    "PEJ"
+   ],
+   "publisher": "World Nuclear News",
+   "lang": "en",
+   "region": "National"
+  },
   {
    "id": "live-35dd4b2b01",
    "date": "2026-10-31",
