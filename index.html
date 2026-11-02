@@ -309,7 +309,7 @@ button.tg.as:hover{background:#fbd3e1}
 .ppp-loading #view{opacity:.35;transition:opacity .2s}
 </style>
 <script>
-document.documentElement.setAttribute('data-ppp','v99');
+document.documentElement.setAttribute('data-ppp','v104');
 document.documentElement.classList.add('ppp-loading');
 window.__quiet=true;
 window.__parsed=new Promise(function(r){window.__parsedOk=r;});
@@ -1031,35 +1031,19 @@ setTimeout(function(){window.__quiet=false;window.__parsedOk();document.document
       <button class="nl-x" id="nlX" aria-label="Close">✕</button>
     </div>
     <div class="nl-controls">
-      <div class="nl-field">
-        <label>Quick range</label>
-        <div class="nl-presets">
-          <button class="nl-preset" data-days="7">7 days</button>
-          <button class="nl-preset" data-days="30">30 days</button>
-          <button class="nl-preset" data-days="90">90 days</button>
-          <button class="nl-preset" data-days="mtd">Month to date</button>
-        </div>
-      </div>
       <div class="nl-field"><label for="nlFrom">From</label><input type="date" id="nlFrom"></div>
       <div class="nl-field"><label for="nlTo">To</label><input type="date" id="nlTo"></div>
-      <div class="nl-field"><label for="nlGroup">Group by</label>
-        <select id="nlGroup">
-          <option value="category">None (newest first)</option>
-          <option value="company">Company</option>
-          <option value="date">Date</option>
-        </select>
-      </div>
-      <div class="nl-field"><label>Scope</label>
-        <label class="nl-check"><input type="checkbox" id="nlRespect"> Apply News Feed filters</label>
-      </div>
+      <input type="checkbox" id="nlRespect" hidden><select id="nlGroup" hidden><option value="category"></option></select>
       <button class="nl-gen" id="nlGenBtn">Generate</button>
     </div>
     <div class="nl-preview" id="nlPreview"></div>
     <div class="nl-actions">
-      <button class="nl-act nl-act-primary" id="nlWord">⭳ Word (.doc)</button>
-      <button class="nl-act nl-act-primary" id="nlPrint">🖨 PDF (Save as PDF)</button>
-      <button class="nl-act" id="nlCopy">⧉ Copy</button>
-      <button class="nl-act" id="nlDownload">⭳ HTML</button>
+      <span class="nl-dl-lab">Download newsletter:</span>
+      <button class="nl-act nl-act-primary" id="nlWord" title="Editable Word document">⭳ Word (.doc)</button>
+      <button class="nl-act nl-act-primary" id="nlPrint" title="Opens a print-ready copy — choose “Save as PDF”">⭳ PDF</button>
+      <button class="nl-act nl-act-primary" id="nlDownload" title="Stand-alone web page">⭳ HTML</button>
+      <button class="nl-act" id="nlEml" title="Draft email (.eml) — opens in Outlook with the newsletter in the body">✉ Outlook email (.eml)</button>
+      <button class="nl-act" id="nlCopy" title="Copy formatted newsletter to paste into Outlook, Teams or Word">⧉ Copy</button>
       <span class="nl-msg" id="nlMsg"></span>
     </div>
   </div>
@@ -4170,6 +4154,355 @@ details.rv[open]>summary{border-bottom:1px solid var(--line)}
   const inSig=new Set(SIGNALS.map(s=>s.id));
   add.forEach(s=>{ if(!inSig.has(s.id)) SIGNALS.push(s); });
   render();
+})();
+</script>
+
+<script>
+/* ═══ v104: Newsletter brief ═══
+   Header banner · "<Month> in three lines" · Top 5 changes · Also notable.
+   Built from BOTH the News Feed and the Signal Monitor items (live feed + curated) in the chosen date range,
+   de-duplicated with the dashboard's own rules and screened against the monitoring scope.
+   Each item shows "Source: <publisher> ↗" linking to the original article.
+   All styling is inline and table-based so Word (.doc), PDF and HTML exports look the same.            */
+(function(){
+  const CAT={policy:{l:'Policy',c:'#3b5bdb',t:'#e7ecfd'},build:{l:'Build-out',c:'#e0044e',t:'#fde3ec'},
+             deal:{l:'Deal',c:'#7a3fa0',t:'#f0e6f6'},nuclear:{l:'Nuclear',c:'#0b7285',t:'#dff1f4'},
+             strategy:{l:'Strategy',c:'#862e9c',t:'#f3e6f7'},results:{l:'Results',c:'#862e9c',t:'#f3e6f7'}};
+  const P=()=>window.__pol||{};
+  const isPol=s=>{try{return !!(P().isPolicySignal&&P().isPolicySignal(s));}catch(e){return false;}};
+  const isBld=s=>{try{return !!(P().isBuildSignal&&P().isBuildSignal(s));}catch(e){return false;}};
+  function bStage(s){
+    if(window.STAGE_FIX&&STAGE_FIX[s.id]) return STAGE_FIX[s.id];
+    const h=((s.change||'')+' '+(s.title||'')).toLowerCase();
+    if(s.sub==='SET'||/delay|missed|postpone|cancel|withdr|terminat|suspend|curtail|not been met/.test(h)) return 'SET';
+    if(/commercial operation|comes online|online|energis|first power|first electricity|commissioning|back online|synchronis/.test(h)) return 'COM';
+    if(s.sub==='MA'||/acqui|buys|sold|sale|divest|stake|squeeze|buy-out|takeover/.test(h)) return 'MA';
+    if(s.sub==='CAP'||s.sub==='SUP'||/auction|cfd|subsid|grant|co-financ|support/.test(h)) return 'AUC';
+    if(s.sub==='FIN'||/\bfid\b|final investment|financ|loan|financial close|debt/.test(h)) return 'FIN';
+    if(s.sub==='SCH'||s.sub==='MOU'||/contract|epc|tender|procure|order|supply|contractor|agreement/.test(h)) return 'PROC';
+    if(s.sub==='LIC'||/licen|permit|environmental decision/.test(h)) return 'PERM';
+    if(s.sub==='CON'||/construction|install|foundation|earthwork|turbines installed|cornerstone/.test(h)) return 'CON';
+    return 'PLAN';
+  }
+  const BSTEP={PLAN:[0,''],PERM:[0,'PERMIT'],AUC:[0,'SUPPORT'],FIN:[0,'FINANCING'],PROC:[1,''],MA:[null,'DEAL'],CON:[2,''],COM:[3,''],SET:[null,'DELAY']};
+  const PSTEP={PROP:0,LAW:1,RULE:1,SUPP:2};
+  const POLSUB=new Set(['LEG','SUP','TAR','CAP','LIC']);
+  function catOf(s){
+    if(s.sub==='RES') return 'results';
+    if(isPol(s)||(POLSUB.has(s.sub)&&!(s.assets||[]).length)) return 'policy';
+    if(s.sub==='STR'||s.sub==='LEAD') return 'strategy';
+    if((s.tech||[]).includes('nuclear')) return 'nuclear';
+    const k=bStage(s); if(k==='MA'||k==='FIN') return 'deal';
+    return 'build';
+  }
+  function num(t){ const out={mw:0,pln:0,eur:0};
+    String(t||'').replace(/(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s?(gw|mw|mwe|mwp|mwac)\b/gi,(m,n,u)=>{let v=parseFloat(n.replace(/,/g,''));if(/gw/i.test(u))v*=1000;out.mw=Math.max(out.mw,v);});
+    String(t||'').replace(/(?:pln|zł)\s?(\d+(?:[.,]\d+)?)\s?(bn|billion|m|million)|(\d+(?:[.,]\d+)?)\s?(bn|billion|m|million)\s?(?:pln|zł)/gi,(m,a,b,c,d)=>{let v=parseFloat((a||c).replace(',','.'));v*=/b/i.test(b||d)?1000:1;out.pln=Math.max(out.pln,v);});
+    String(t||'').replace(/(?:€|eur\s?)(\d+(?:[.,]\d+)?)\s?(bn|billion|m|million)/gi,(m,a,b)=>{let v=parseFloat(a.replace(',','.'));v*=/b/i.test(b)?1000:1;out.eur=Math.max(out.eur,v);});
+    return out; }
+  const capOf=s=>{ try{ return window.capacityOf?capacityOf(s):''; }catch(e){ return ''; } };
+  function score(s){
+    const t=[s.title,s.change,s.summary].join(' ');
+    const n=num(capOf(s)+' '+s.title+' '+s.change+' '+(s.why||'')), k=isPol(s)?null:bStage(s); let sc=0;
+    if(n.mw>=100||n.pln>=250||n.eur>=50) sc+=2;
+    if(n.mw>=1000||n.pln>=1000||n.eur>=250) sc+=1;
+    if(n.mw&&n.mw<30&&n.pln<250&&n.eur<50) sc-=1.5;
+    if(k&&['FIN','CON','COM','PROC'].includes(k)) sc++;
+    if(isPol(s)&&/\b(approv|adopt|in force|effective|opens?|opened|award|signed|pass)/i.test(t)) sc+=1.5;
+    if(s.sub==='STR'&&/strateg|plan|projects|transformation/i.test(s.title+' '+s.change)) sc+=1.5;
+    if(/\bfirst\b|largest|pierwsz/i.test(s.title+' '+s.change)) sc+=0.5;
+    if(k==='MA'||/\bexit\b|enters? (the )?polish/i.test(t)) sc++;
+    if(!s.auto) sc+=0.5;
+    if(/\b(weighs?|considers?|explores?|mulls?|reportedly|could|may)\b/i.test(s.title+' '+s.change)) sc-=1;
+    if(s.sub==='RES') sc-=1;
+    if(/head office|registered office|headquarter|siedzib/i.test(s.title+' '+s.change)) sc-=2;
+    if(s.newsOnly&&!isPol(s)&&!POLSUB.has(s.sub)) sc-=2;
+    s.__mw=n.mw;
+    return sc;
+  }
+  const wc=x=>String(x||'').trim().split(/\s+/).filter(Boolean).length;
+  const sents=x=>String(x||'').replace(/\s+/g,' ').trim().replace(/\b(approx|incl|e\.g|i\.e|vs|no|Inc|Ltd|Co|Corp|St|Mr|Dr|Sp)\.(?=\s)/gi,'$1§').split(/(?<=[.!?])\s+(?=[A-ZĄĆĘŁŃÓŚŹŻ0-9“"(])/).map(t=>t.replace(/§/g,'.')).filter(Boolean);
+  const has=(txt,part)=>{ const w=String(part).toLowerCase().replace(/[^a-z0-9ąćęłńóśźż ]/g,' ').split(/\s+/).filter(x=>x.length>3); if(!w.length) return true; const T=txt.toLowerCase(); return w.filter(x=>T.includes(x)).length/w.length>0.5; };
+  function brief(s,cap){
+    const MAX=78, out=[];
+    const n=()=>wc(out.join(' '));
+    const add=x=>{ x=String(x||'').trim(); if(!x) return; if(!/[.!?…]$/.test(x)) x+='.'; if(out.length&&has(out.join(' '),x)) return; out.push(x); };
+    for(const x of sents(s.summary)){ if(n()>=60) break; if(n()>=50 && n()+wc(x)>78) break; add(x); }
+    const why=/^Watch for follow-on disclosures/i.test(s.why||'')?'':s.why;
+    if(n()<56 && why){ const parts=String(why).split(/;\s*/).filter(c=>!has(out.join(' '),c)); if(parts.length) add(parts.join('; ').replace(/^./,c=>c.toUpperCase())); }
+    if(n()<50) add(s.change);
+    if(n()<50 && cap && !has(out.join(' '),cap)) add('Capacity: '+cap);
+    let txt=out.join(' ');
+    if(wc(txt)>MAX+6) txt=txt.split(/\s+/).slice(0,MAX).join(' ').replace(/[,;:–—-]+$/,'')+'…';
+    return txt;
+  }
+  const H=t=>esc(t);
+  const A='font-family:Arial,Helvetica,sans-serif;';
+  const link=s=>s.src_url||((s.links||[])[0]||{}).url||'#';
+  const pill=(txt,c,bg,extra)=>`<span style="display:inline-block;${A}font-size:7.5pt;font-weight:bold;color:${c};background:${bg};padding:1px 6px;border-radius:8px;${extra||''}">${H(txt)}</span>`;
+  const ymd=d=>{ const [y,m,dd]=String(d).slice(0,10).split('-').map(Number); return new Date(y,(m||1)-1,dd||1); };
+  const dayMon=d=>{ const x=ymd(d); return x.getDate()+' '+x.toLocaleDateString('en-GB',{month:'short'}); };
+  function srcLine(s){
+    return `<div style="${A}font-size:8.5pt;line-height:1.45;color:#555;margin-top:3px">Source: <a href="${H(link(s))}" style="color:#7a3fa0">${H(s.publisher||'Source')} ↗</a></div>`;
+  }
+  function bar(s,cat){
+    if(cat==='strategy'||cat==='results') return '';
+    const c=CAT[cat]; let labels, step, extra='';
+    if(cat==='policy'){ labels=['PROPOSED','ADOPTED','IN EFFECT']; const ps=P().polSub?P().polSub(s):'PROP'; step=PSTEP[ps]??0; if(ps==='SUPP') extra='SUPPORT'; }
+    else { labels=['PLAN','CONTRACT','BUILD','OPERATE']; const [st,x]=BSTEP[bStage(s)]||[0,'']; step=st; extra=x; }
+    let cells=labels.map((l,i)=>{ const on=step===i, past=step!=null&&i<step;
+      const st=on?`background:${c.c};color:#fff;font-weight:bold`:past?`background:${c.t};color:${c.c};font-weight:bold`:'background:#f0eef2;color:#b7b0bd';
+      return `<td style="${st};${A}font-size:7pt;letter-spacing:.5px;text-align:center;padding:2px 0;width:72px;border:2px solid #fff">${l}</td>`; }).join('');
+    if(extra) cells+=`<td style="padding:0 0 0 6px;border:0">${pill(extra,c.c,'#fff','border:1px solid '+c.c)}</td>`;
+    return `<table cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin:3px 0 2px"><tr>${cells}</tr></table>`;
+  }
+  const listJoin=a=>a.length<2?(a[0]||''):a.slice(0,-1).join(', ')+' and '+a[a.length-1];
+  const noDot=t=>String(t||'').trim().replace(/[.;:]+$/,'');
+  const coNames=s=>(s.cos||[]).filter(c=>c!=='ALL'&&c!=='OTHER');
+  const BIG=new Set(['PGE','TAURON','ENEA','ENERGA','ORLEN']);
+  const FRAG={
+    h21:'PGE locked in a ~PLN 210bn plan to 2035', u12:'TAURON mapped ~3.7 GW of new projects on its coal sites',
+    nu1:'first long-lead orders for the first plant', o2:'conditional module orders with four Polish suppliers',
+    o1:'defined roles for a second plant', w2:'a reset of the SMR governance dispute', h20:"a shareholders' agreement for the Pątnów SMR",
+    v2:'a preliminary-works permit application at Lubiatowo-Kopalino',
+    h19:'Baltic Power installed all 76 turbines', y4:'Gdańsk opened its PLN 1.2bn T5 offshore installation terminal',
+    w3:'Gdańsk CCGT finished its main foundations', h29:'TAURON contracted a PLN 300m+ heat source in Jaworzno', h31:"TAURON's 910 MW Jaworzno unit returned after a PLN 290m overhaul",
+    y1:'Qair broke ground on the 80 MW Wierzbica PV plant', y3:'Polenergia signed PLN 1.35bn of wind financing', h22:'Virya secured debt for its 135 MWp Zabice PV park',
+    u9:'R.Power energised its first standalone battery', h36:'Tavion started building its first battery park', o4:'R.Power readied its 150 MW Jedwabno battery for December energisation',
+    w1:'PGE contracted four co-located batteries at its wind farms',
+    h33:'balancing-rule changes were approved from 15 December', h32:'the CHP auction awarded PLN 538m', u10:'a PLN 1bn home-storage grant scheme opened',
+    arp1:'ARP opened up to PLN 100m for offshore suppliers', h35:'PSE set the 2028 additional-auction pre-auctions', v3:'home batteries up to 2.2× PV power were exempted from installed-capacity limits'
+  };
+  const NOTE={
+    u12:'TAURON unveils 26 projects (~3.7 GW, up to ~PLN 17bn) at four coal sites, including gas peakers, storage and heat.',
+    arp1:'ARP launches "Ready for Offshore" with up to PLN 100m of financing for supply-chain firms.',
+    h33:'Balancing-rule changes approved, effective 15 December 2026.',
+    h19:'Baltic Power completes all 76 turbines; commercial operation on track for 2026.',
+    h32:'Cogeneration (CHP) auction awards PLN 538m to six producers.',
+    h31:"TAURON's 910 MW Jaworzno unit is back online after a PLN 290m overhaul.",
+    u10:'PLN 1bn home energy-storage grant programme opens.',
+    u7:'ORLEN flags a PLN 0.8bn Q3 impairment in its Energy segment.',
+    h21:'PGE adopts its updated 2035 strategy: ~PLN 210bn of capex and a return to dividends from 2026 profit.',
+    nu1:'PEJ and Westinghouse start long-lead procurement for the first AP1000 unit.',
+    o2:'Westinghouse places conditional module orders with four Polish suppliers.',
+    o1:'Second nuclear plant: PEJ named investor, PGE leads siting work.',
+    o3:'PSE and Litgrid sign the Harmony Link connection-point agreement.',
+    o4:'R.Power completes battery deliveries at 150 MW Jedwabno; energisation due in December.',
+    o5:'Actis buys 244 MW / 1,141 MWh of capacity-contracted batteries from DRI.',
+    o7:'State energy groups set up a joint critical-infrastructure threat-sharing mechanism.',
+    h20:"ZE PAK signs a shareholders' agreement for the Pątnów SMR.",
+    h29:'TAURON signs a PLN 300m+ contract for a new Jaworzno heat source.',
+    h30:'TAURON Dystrybucja delays its full switch to the CSIRE energy data hub.',
+    u1:'PGE Baltica moves its head office from Warsaw to Gdańsk.',
+    u8:'TAURON buys the 28.3 MW / 120 MWh BME Jawor battery project.',
+    u9:'R.Power energises its first standalone battery (5 MW / 10 MWh).',
+    v1:'Greenvolt agrees to sell 400 MW / 1.6 GWh of batteries for up to €391.5m.',
+    v2:'PEJ to apply for a preliminary-works permit; decision expected in 2027.',
+    v3:'Home batteries up to 2.2× PV power exempt from installed-capacity rules from 1 December.',
+    v4:'URE calls for wider EU exceptions for grid-operator batteries.',
+    w1:'PGE picks Elektrotim for four co-located wind-farm batteries (PLN 331m).',
+    w2:'ORLEN to lead Włocławek SMR, SGE to lead Stawy Monowskie.',
+    w3:'Gdańsk CCGT completes its main-equipment foundations.',
+    w4:'PSE: 1.3 GW / 3 GWh of batteries installed as of 1 October.',
+    w5:'Installed wind capacity reaches 11.8 GW; solar 28.2 GW.',
+    h22:'Virya Energy secures debt for its 135 MWp Zabice solar park.',
+    h23:'Poland pushes for a voluntary ETS2 and broader EU ETS reform.',
+    h35:'PSE sets 5 November for the 2028 additional-auction pre-auctions.',
+    h36:'Tavion starts building its first battery park (20 MW / 40 MWh, Bydgoszcz).',
+    y1:'Qair breaks ground on the 80 MW Wierzbica solar farm.',
+    y3:'Polenergia signs PLN 1.35bn, 15-year financing for 276 MW of wind.',
+    y4:'Gdańsk opens the PLN 1.2bn T5 offshore installation terminal.',
+    ib1:'Iberdrola weighs a sale of its Polish portfolio (213 MW wind + ~1 GW storage pipeline).'
+  };
+  const fragOf=s=>FRAG[s.id]||noDot(s.hl_fix||s.sig_title||s.change||s.title);
+  const noteOf=s=>{ const t=NOTE[s.id]||String(s.hl_fix||s.sig_title||s.change||s.title||'').trim(); return /[.!?…]$/.test(t)?t:t+'.'; };
+  function capTotals(s){
+    let t=capOf(s)||(s.title+' '+s.change); if(t.includes('=')) t=t.slice(t.lastIndexOf('=')+1);
+    const g=(rx,mult)=>{ const m=t.match(rx); return m?parseFloat(m[1].replace(/,/g,''))*mult:0; };
+    const mw=g(/(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s?MW(?!h)/i,1)||g(/(\d+(?:\.\d+)?)\s?GW(?!h)/i,1000);
+    const mwh=g(/(\d{1,3}(?:,\d{3})+|\d+(?:\.\d+)?)\s?MWh/i,1)||g(/(\d+(?:\.\d+)?)\s?GWh/i,1000);
+    return {mw,mwh};
+  }
+  const fmtMW=v=>v>=1000?(Math.round(v/100)/10).toString().replace(/\.0$/,'')+' GW':(v>=100?Math.round(v/10)*10:Math.round(v))+' MW';
+  const fmtMWh=v=>v>=1000?(Math.round(v/100)/10).toString().replace(/\.0$/,'')+' GWh':Math.round(v)+' MWh';
+  const STAGE_OF=s=>isPol(s)?'POL':bStage(s);
+  const THEMES=[
+    {id:'incumb', test:s=>s.sub==='STR'&&coNames(s).some(c=>BIG.has(c))&&!/office|headquarter|siedzib/i.test(s.title+' '+s.change)&&/strateg|plan|projects|transformation|programme|capex/i.test(s.title+' '+s.change+' '+(s.summary||'')),
+     write:g=>({lead:'Incumbents reset', text:listJoin(g.slice(0,2).map(fragOf))+'.'})},
+    {id:'nuclear', test:s=>(s.tech||[]).includes('nuclear')&&catOf(s)!=='policy',
+     write:g=>{ const st=g.map(STAGE_OF);
+       const lead=st.includes('PROC')?'Nuclear moved from plans to procurement':st.includes('CON')?'Nuclear moved into site works':st.includes('PERM')?'Nuclear permitting advanced':'Nuclear programme advanced';
+       const seen=new Set(), pick=[]; g.forEach(s=>{ const a=(s.assets||[])[0]||s.id; if(seen.has(a)||pick.length>=3) return; seen.add(a); pick.push(s); });
+       return {lead, text:listJoin(pick.map(fragOf))+'.'}; }},
+    {id:'policy', test:s=>catOf(s)==='policy',
+     write:g=>({lead:'Market rules and support moved', text:listJoin(g.slice(0,3).map(s=>fragOf(s).replace(/^./,c=>c.toLowerCase()).replace(/^(arp\b|pse\b|ure\b)/i,m=>m.toUpperCase())))+'.'})},
+    {id:'storage', test:s=>(s.tech||[]).includes('bess'),
+     write:g=>{ const ma=g.filter(s=>STAGE_OF(s)==='MA'&&!/\b(weighs?|considers?|explores?|mulls?|eyes|reportedly)\b/i.test(s.title+' '+s.change));
+       if(ma.length>=2){ let mw=0,mwh=0; ma.forEach(s=>{const c=capTotals(s); mw+=c.mw; mwh+=c.mwh;});
+         const buyers=new Set(ma.flatMap(coNames)); const util=[...buyers].some(c=>BIG.has(c)), fund=ma.some(s=>(s.cos||[]).includes('OTHER'));
+         const size=mw?`about ${fmtMW(mw)}${mwh?' / '+fmtMWh(mwh):''} of Polish battery projects`:`${ma.length} Polish battery projects`;
+         return {lead:'Storage capital is rotating', text:`${size} changed hands${util&&fund?', as early developers sell to funds and utilities':' across '+ma.length+' deals'}.`}; }
+       const st=g.map(STAGE_OF); const lead=st.some(x=>x==='CON'||x==='COM')?'Storage moved into build':st.includes('FIN')?'Storage financing flowed':'Storage pipeline grew';
+       return {lead, text:listJoin(g.slice(0,2).map(fragOf))+'.'}; }},
+    {id:'offshore', test:s=>(s.tech||[]).includes('offshore'),
+     write:g=>{ const st=g.map(STAGE_OF); const lead=st.includes('COM')?'Offshore wind reached first power':st.includes('CON')?'Offshore wind build-out advanced':st.includes('FIN')?'Offshore wind secured financing':'Offshore wind advanced';
+       return {lead, text:listJoin(g.slice(0,2).map(fragOf))+'.'}; }},
+    {id:'gas', test:s=>(s.tech||[]).some(t=>t==='gas'||t==='chp'||t==='coal'),
+     write:g=>({lead:'Thermal back-up progressed', text:listJoin(g.slice(0,2).map(fragOf))+'.'})},
+    {id:'renew', test:s=>(s.tech||[]).some(t=>t==='solar'||t==='onshore'),
+     write:g=>({lead:'Onshore wind and solar kept moving', text:listJoin(g.slice(0,2).map(fragOf))+'.'})},
+    {id:'grid', test:s=>(s.tech||[]).includes('grid')||s.sub==='GRID',
+     write:g=>({lead:'Grid work advanced', text:listJoin(g.slice(0,2).map(fragOf))+'.'})}
+  ];
+  const THEME_W={incumb:1.6,nuclear:1.3,storage:1.2,offshore:1,policy:0.9,gas:0.9,renew:0.8,grid:0.7};
+  function threeLines(pool){
+    const groups={}; THEMES.forEach(t=>groups[t.id]=[]);
+    pool.filter(s=>s.__cat!=='results').forEach(s=>{ const t=THEMES.find(x=>{try{return x.test(s);}catch(e){return false;}}); if(t) groups[t.id].push(s); });
+    const ranked=THEMES.map(t=>{ const g=groups[t.id].slice().sort((a,b)=>(b.__sc+(FRAG[b.id]? 0.3 : 0))-(a.__sc+(FRAG[a.id]? 0.3 : 0)));
+        const v=g.slice(0,3).reduce((m,s)=>m+Math.max(0.5,s.__sc),0)*(THEME_W[t.id]||1); return {t,g,v}; })
+      .filter(x=>x.g.length).sort((a,b)=>b.v-a.v).slice(0,3);
+    const COL=['#43224d','#e0044e','#3b5bdb'];
+    return ranked.map((x,i)=>Object.assign(x.t.write(x.g),{col:COL[i]}));
+  }
+  function rangeInfo(from,to){
+    const f=ymd(from), t=ymd(to), M=d=>d.toLocaleDateString('en-GB',{month:'long'});
+    const sameY=f.getFullYear()===t.getFullYear(), sameM=sameY&&f.getMonth()===t.getMonth();
+    const range=sameM?(f.getDate()===t.getDate()?`${t.getDate()} ${M(t)} ${t.getFullYear()}`:`${f.getDate()}–${t.getDate()} ${M(t)} ${t.getFullYear()}`)
+               :sameY?`${f.getDate()} ${M(f)} – ${t.getDate()} ${M(t)} ${t.getFullYear()}`:`${f.getDate()} ${M(f)} ${f.getFullYear()} – ${t.getDate()} ${M(t)} ${t.getFullYear()}`;
+    const kicker=sameM?`${M(t).toUpperCase()} IN THREE LINES`:'THE PERIOD IN THREE LINES';
+    return {range,kicker};
+  }
+  const kick=(t,mt)=>`<div style="${A}font-size:9pt;font-weight:bold;letter-spacing:2px;color:#e0044e;margin:${mt||18}px 0 8px">${H(t)}</div>`;
+  const ROUND=/\b(weekly|monthly|daily|quarterly)\s+(summary|review|round-?up|digest|briefing|update|recap)\b|\bweek in (review|energy)\b|\bthis week in\b|przegl[aą]d\s+(tygodnia|miesi[aą]ca)|podsumowanie\s+(tygodnia|miesi[aą]ca)/i;
+  const DATACENTRE=/data cent(er|re)s?|centr(a|ów|ach) danych/i;
+  function buildBrief(){
+    let from=nl('nlFrom').value, to=nl('nlTo').value;
+    const inRange=s=>(!from||s.date>=from)&&(!to||s.date<=to);
+    const ok=s=>!(window.isEditorialItem&&isEditorialItem(s))&&!(window.reviewOf&&reviewOf(s.id).status==='excluded')
+      &&!(window.outOfScope&&outOfScope(s))&&!(window.offScopeLive&&offScopeLive(s))
+      &&!ROUND.test((s.title||'')+' '+(s.title_pl||''))&&!DATACENTRE.test((s.title||'')+' '+(s.title_pl||''));
+    const v0=view; let pool;
+    try{
+      view='signals';
+      const sig=SIGNALS.filter(s=>inRange(s)&&(isPol(s)||isBld(s)));
+      view='news';
+      const news=SIGNALS.filter(s=>inRange(s)&&s.in_feed!==false);
+      const seen=new Set(); pool=dedupe(sig.concat(news).filter(s=>{ if(seen.has(s.id)) return false; seen.add(s.id); return ok(s); })
+        .sort((a,b)=>b.date.localeCompare(a.date)));
+    } finally { view=v0; }
+    pool.forEach(s=>{ s.__cat=catOf(s); s.__sc=score(s); });
+    if(!from) from=pool.reduce((m,s)=>!m||s.date<m?s.date:m,'')||isoDay(new Date());
+    if(!to)   to=pool.reduce((m,s)=>s.date>m?s.date:m,'')||isoDay(new Date());
+    const R=rangeInfo(from,to);
+    const ranked=pool.filter(s=>s.__cat!=='results').sort((a,b)=>b.__sc-a.__sc||(b.__mw||0)-(a.__mw||0)||b.date.localeCompare(a.date));
+    const pol=ranked.find(s=>s.__cat==='policy');
+    const key=s=>coNames(s).flatMap(c=>(s.tech||[]).map(x=>c+'|'+x));
+    const used=new Set(), per={}, top=[];
+    ranked.filter(s=>s.__cat!=='policy').forEach(s=>{ if(top.length>=(pol?4:5)) return;
+      if((per[s.__cat]||0)>=2) return; const k=key(s); if(k.some(x=>used.has(x))) return;
+      top.push(s); per[s.__cat]=(per[s.__cat]||0)+1; k.forEach(x=>used.add(x)); });
+    if(pol) top.push(pol);
+    top.sort((a,b)=>b.__sc-a.__sc);
+    const isTop=new Set(top.map(s=>s.id));
+    const rest=pool.filter(s=>!isTop.has(s.id)).sort((a,b)=>b.__sc-a.__sc||b.date.localeCompare(a.date));
+    const nPer={}, notable=[];
+    rest.forEach(s=>{ if(notable.length<8&&(nPer[s.__cat]||0)<2){ notable.push(s); nPer[s.__cat]=(nPer[s.__cat]||0)+1; } });
+    rest.forEach(s=>{ if(notable.length<8&&!notable.includes(s)) notable.push(s); });
+    notable.sort((a,b)=>a.date.localeCompare(b.date));
+    const lines=threeLines(pool);
+    let body='';
+    if(lines.length){
+      body+=kick(R.kicker)+`<table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse">`+
+        lines.map(x=>`<tr><td width="24" style="vertical-align:top;padding:1px 0 10px;${A}font-size:15pt;line-height:1;color:${x.col}">●</td>
+          <td style="vertical-align:top;padding:0 0 10px;${A}font-size:11pt;line-height:1.5;color:#1f1f1f"><b>${H(x.lead)}:</b> ${H(x.text)}</td></tr>`).join('')+`</table>`;
+    }
+    if(top.length){
+      body+=kick(`TOP ${top.length} CHANGES`,14);
+      top.forEach((s,i)=>{ const c=CAT[s.__cat]; const cos=coNames(s).map(coLabel).join(' · ')||((s.cos||[]).includes('OTHER')&&s.unit?String(s.unit).split(/\s+[—–-]\s+/)[0]:'Market-wide');
+        const cap=capOf(s);
+        body+=`<table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;border-bottom:1px solid #eee;page-break-inside:avoid"><tr>
+          <td width="34" style="vertical-align:top;padding:9px 0"><div style="background:${c.c};color:#fff;${A}font-weight:bold;font-size:12pt;width:28px;height:28px;line-height:28px;text-align:center;border-radius:6px">${i+1}</div></td>
+          <td style="vertical-align:top;padding:8px 0 9px 8px">
+            <div style="${A}font-size:8pt;color:#6a6272">${H(fmtShort(s.date))} · ${H(cos)} · <b style="color:${c.c}">${c.l}</b></div>
+            <div style="font-family:Georgia,serif;font-size:13pt;font-weight:bold;margin:2px 0 3px">${H(s.hl_fix||s.sig_title||s.title)}</div>
+            ${bar(s,s.__cat)}
+            <div style="${A}font-size:9.5pt;line-height:1.5;margin-top:4px">${H(brief(s,cap))}</div>
+            ${srcLine(s)}</td></tr></table>`; });
+    }
+    if(notable.length){
+      body+=kick('ALSO NOTABLE',20)+`<table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse">`+
+        notable.map((s,i)=>{ const c=CAT[s.__cat]; const bd=i<notable.length-1?'border-bottom:1px dashed #d9d4de;':'';
+          return `<tr style="page-break-inside:avoid"><td width="58" style="vertical-align:top;padding:9px 8px 9px 0;${bd}${A}font-size:10pt;font-weight:bold;color:#8a8392;white-space:nowrap">${H(dayMon(s.date))}</td>
+            <td width="78" style="vertical-align:top;padding:8px 10px 9px 0;${bd}white-space:nowrap"><span style="display:inline-block;${A}font-size:8.5pt;font-weight:bold;color:${c.c};background:${c.t};padding:2px 9px;border-radius:10px">${c.l}</span></td>
+            <td style="vertical-align:top;padding:8px 0 9px;${bd}${A}font-size:10.5pt;line-height:1.45;color:#1f1f1f">${H(noteOf(s))} <a href="${H(link(s))}" style="${A}font-size:8.5pt;color:#7a3fa0;text-decoration:none;white-space:nowrap">${H(s.publisher||'Source')} ↗</a></td></tr>`; }).join('')+`</table>`;
+    }
+    if(!pool.length) body=`<div style="${A}font-size:10pt;color:#7f7f7f;padding:24px 0;text-align:center">No material news or signals in this period.</div>`;
+    body+=`<div style="${A}font-size:7.5pt;color:#6a6272;line-height:1.5;border-top:1px solid #ddd;margin-top:16px;padding-top:7px">
+      Built from the News Feed and the Signal Monitor for the selected dates (duplicates merged; out-of-scope items excluded).
+      Top ${top.length||5} = highest materiality score: scale (≥100 MW, ≥PLN 250m or ≥€50m; extra point ≥1 GW / ≥PLN 1bn), stage move (financing, contract, construction, operation), binding policy (adopted / in force / awarded), first of its kind, market-structure change; one Policy slot is reserved. Also notable = the next most material items, by date.<br>
+      Stage bars: Plan (plans, permits, support, financing) → Contract → Build → Operate; Policy uses Proposed → Adopted → In effect. Bars are analyst judgement, not source-reported.</div>
+     <div style="background:#2d1240;color:#d9c9e4;${A}font-size:8pt;padding:7px 12px;margin-top:8px">Poland Power Pulse — News &amp; Signal Monitor · For internal use only; not to be forwarded externally without the author’s consent.</div>`;
+    const head=`<table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse"><tr>
+      <td style="background:#43224d;background-image:linear-gradient(90deg,#2d1335 0%,#43224d 50%,#6b2a5f 100%);padding:18px 24px 16px;border-radius:10px">
+        <table cellspacing="0" cellpadding="0" style="border-collapse:collapse"><tr>
+          <td style="vertical-align:middle;padding:0 10px 0 0"><table cellspacing="0" cellpadding="0" style="border-collapse:collapse;border:1px solid #bfb3c8"><tr><td style="width:22px;height:7px;background:#ffffff;font-size:1px;line-height:7px">&nbsp;</td></tr><tr><td style="width:22px;height:7px;background:#dc143c;font-size:1px;line-height:7px">&nbsp;</td></tr></table></td>
+          <td style="vertical-align:middle;${A}font-size:9pt;letter-spacing:1.5px;color:#d9cbe2">POLAND POWER PULSE</td></tr></table>
+        <div style="font-family:Georgia,'Crimson Text',serif;font-size:26pt;font-weight:bold;color:#ffffff;line-height:1.15;margin:6px 0 4px">What Moved in Polish Power</div>
+        <div style="${A}font-size:10.5pt;color:#e8dff0">Material changes · ${H(R.range)}</div></td></tr></table>`;
+    nl('nlPreview').innerHTML=`<div style="${A}color:#1f1f1f;max-width:760px;margin:0 auto">${head}${body}</div>`;
+    nl('nlMsg').textContent=`${pool.length} items · Top ${top.length} · ${notable.length} also notable`;
+  }
+  function defaultRange(){
+    const t=new Date(); let f,e;
+    if(t.getDate()<=7){ f=new Date(t.getFullYear(),t.getMonth()-1,1); e=new Date(t.getFullYear(),t.getMonth(),0); }
+    else { f=new Date(t.getFullYear(),t.getMonth(),1); e=t; }
+    nl('nlFrom').value=isoDay(f); nl('nlTo').value=isoDay(e);
+  }
+  nlBuild=function(){ return buildBrief(); };
+  ['nlGenBtn'].forEach(id=>{ const b=nl(id); if(b){ const c=b.cloneNode(true); b.parentNode.replaceChild(c,b); c.addEventListener('click',()=>nlBuild()); }});
+  ['nlFrom','nlTo'].forEach(id=>{ const el=nl(id); const c=el.cloneNode(true); el.parentNode.replaceChild(c,el); c.addEventListener('change',()=>nlBuild()); });
+  const oo=nl('nlOpen'); const oc=oo.cloneNode(true); oo.parentNode.replaceChild(oc,oo);
+  oc.addEventListener('click',()=>{ if(!nl('nlFrom').value||!nl('nlTo').value) defaultRange(); nlBuild(); nl('nlOverlay').classList.add('open'); });
+  window.__nlBrief=buildBrief;
+})();
+</script>
+
+<script>
+/* ═══ v102: newsletter downloads — Word, PDF, HTML, Outlook email, Copy ═══ */
+(function(){
+  const fname=ext=>{ const f=nl('nlFrom').value||'', t=nl('nlTo').value||''; return `Poland-Power-Pulse_Newsletter_${f}_to_${t}.${ext}`; };
+  const TITLE='Poland Power Pulse — What Moved in Polish Power';
+  const body=()=>nl('nlPreview').innerHTML;
+  const save=(blob,name,msg)=>{ const u=URL.createObjectURL(blob), a=document.createElement('a'); a.href=u; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),1500); nl('nlMsg').textContent=msg; };
+  const ready=()=>{ if(!nl('nlPreview').innerHTML.trim()) nlBuild(); return true; };
+  const page=(extraHead)=>`<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>${TITLE}</title>${extraHead||''}</head><body style="margin:0;padding:24px;background:#fff">${body()}</body></html>`;
+  const PRINT_CSS='<style>@page{size:A4;margin:12mm 10mm} body{-webkit-print-color-adjust:exact;print-color-adjust:exact} [style*="page-break-before:always"]{break-before:page} table,tr{page-break-inside:avoid}</style>';
+
+  function word(){ ready();
+    const html=`<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>${TITLE}</title>
+<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->
+<style>@page{size:21cm 29.7cm;margin:1.6cm 1.5cm} body{font-family:Arial,sans-serif}</style></head><body>${body().replace(/page-break-before:always/g,'page-break-before:always;mso-break-type:page-break')}</body></html>`;
+    save(new Blob(['\ufeff'+html],{type:'application/msword'}),fname('doc'),'Downloaded Word ✓'); }
+  function pdf(){ ready();
+    const w=window.open('','_blank');
+    if(!w){ nl('nlMsg').textContent='Allow pop-ups to save the PDF'; return; }
+    w.document.open(); w.document.write(page(PRINT_CSS).replace('<title>',`<title>${fname('pdf').replace('.pdf','')}</title><x>`).replace('<x>','')); w.document.close();
+    w.onload=()=>{ w.focus(); w.print(); };
+    setTimeout(()=>{ try{ w.focus(); w.print(); }catch(e){} },700);
+    nl('nlMsg').textContent='Choose “Save as PDF” in the print window'; }
+  function htmlFile(){ ready(); save(new Blob([page()],{type:'text/html'}),fname('html'),'Downloaded HTML ✓'); }
+  function eml(){ ready();
+    const subj=`Poland Power Pulse — ${nl('nlFrom').value} to ${nl('nlTo').value}`;
+    const b64=btoa(unescape(encodeURIComponent(page())));
+    const msg=['X-Unsent: 1','To: ',`Subject: =?UTF-8?B?${btoa(unescape(encodeURIComponent(subj)))}?=`,'MIME-Version: 1.0','Content-Type: text/html; charset=UTF-8','Content-Transfer-Encoding: base64','',b64.replace(/.{76}/g,'$&\r\n')].join('\r\n');
+    save(new Blob([msg],{type:'message/rfc822'}),fname('eml'),'Downloaded email draft ✓ — open it in Outlook'); }
+  async function copy(){ ready(); const n=nl('nlPreview');
+    try{ await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([n.innerHTML],{type:'text/html'}),'text/plain':new Blob([n.innerText],{type:'text/plain'})})]); nl('nlMsg').textContent='Copied ✓ — paste into Outlook, Teams or Word'; }
+    catch(e){ const r=document.createRange(); r.selectNode(n); const s=getSelection(); s.removeAllRanges(); s.addRange(r); try{document.execCommand('copy'); nl('nlMsg').textContent='Copied ✓';}catch(_){nl('nlMsg').textContent='Press Ctrl+C to copy';} s.removeAllRanges(); } }
+  const bind=(id,fn)=>{ const b=nl(id); if(!b) return; const c=b.cloneNode(true); b.parentNode.replaceChild(c,b); c.addEventListener('click',fn); };
+  bind('nlWord',word); bind('nlPrint',pdf); bind('nlDownload',htmlFile); bind('nlEml',eml); bind('nlCopy',copy);
+  const st=document.createElement('style'); st.textContent='.nl-dl-lab{font-family:Poppins,Arial,sans-serif;font-size:11.5px;font-weight:600;color:#3f1d4f;margin-right:2px}.nl-actions{flex-wrap:wrap;align-items:center}';
+  document.head.appendChild(st);
 })();
 </script>
 
