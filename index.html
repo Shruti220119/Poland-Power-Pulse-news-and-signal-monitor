@@ -309,7 +309,7 @@ button.tg.as:hover{background:#fbd3e1}
 .ppp-loading #view{opacity:.35;transition:opacity .2s}
 </style>
 <script>
-document.documentElement.setAttribute('data-ppp','v96');
+document.documentElement.setAttribute('data-ppp','v99');
 document.documentElement.classList.add('ppp-loading');
 window.__quiet=true;
 window.__parsed=new Promise(function(r){window.__parsedOk=r;});
@@ -2394,19 +2394,17 @@ render();
 </style>
 <script>
 /* v81: Policy & Market Design — analyst stage overrides and exclusions */
-window.POL_STAGE_FIX={pz1:'LAW',x1:'RULE',x7:'RULE',h33:'RULE',x6:'SUPP',r5:'SUPP',u6:'SUPP',u10:'SUPP',rg7:'SUPP',rg8:'SUPP',
+window.POL_STAGE_FIX={x1:'RULE',x7:'RULE',h33:'RULE',x6:'SUPP',r5:'SUPP',u6:'SUPP',u10:'SUPP',rg7:'SUPP',rg8:'SUPP',
  r1:'LAW',r2:'LAW',r8:'LAW',n13:'LAW',u4:'LAW',a1:'LAW',a2:'LAW',rg1:'LAW',rg2:'LAW',rg3:'LAW',rg5:'LAW',v3:'LAW',v5:'LAW',
  r3:'PROP',r6:'PROP',r7:'PROP',h2:'PROP',h4:'PROP',h23:'PROP',rg4:'PROP',rg6:'PROP',rg9:'PROP',v4:'PROP'};
 /* national policy items kept although a company/asset tag exists; company- or project-specific items removed */
-window.POL_INCLUDE=new Set(['u4','rg1','pz1']);
-/* v96: a policy / regulatory announcement = a public authority (government, ministry, Sejm, regulator, regional
-   assembly, municipality, EU) approves / adopts / designates / introduces a framework — zones, acceleration areas,
-   rules, schemes, laws, programmes — and no single company or project is the subject. Such items belong to
-   Policy & Market Design even when they mention a technology (solar, wind) or a capacity potential (MW). */
+window.POL_INCLUDE=new Set(['u4','rg1']);
+/* v96: policy / regulatory announcement = a public authority approves / adopts / designates / introduces a framework
+   (zones, acceleration areas, rules, schemes, laws, programmes, tariffs) and no single company or asset is the subject. */
 window.isPolicyAnnouncement=function(s){
   const h=((s.title||'')+' '+(s.title_pl||'')+' '+(s.change||'')).toLowerCase();
-  const ACT=/\b(approv\w*|adopt\w*|designat\w*|introduc\w*|launch\w*|establish\w*|enact\w*|pass(es|ed)?|sign(s|ed)? into law|publish\w*|unveil\w*|set(s)? out|amend\w*|uchwal\w*|przyj\w*|wyznacz\w*)\b/;
-  const OBJ=/\b(acceleration (area|zone)s?|go-to areas?|renewable(s)?( energy)? (acceleration )?(zones?|areas?)|fast-track\w*[^.]{0,40}(zones?|areas?|procedures?|permitting)|zoning|spatial plan\w*|law|act|bill|regulation\w*|ordinance|decree|rules?|framework|scheme|programme|program|policy|strategy|tariff\w*|market design|permitting (reform|rules)|obszar\w* przyspieszon\w*|ustaw\w*|rozporządz\w*)\b/;
+  const ACT=/\b(approv\w*|adopt\w*|designat\w*|introduc\w*|launch\w*|establish\w*|enact\w*|pass(es|ed)?|sign(s|ed)? into law|publish\w*|unveil\w*|set(s)? out|amend\w*|award\w*|uchwal\w*|przyj\w*|wyznacz\w*)\b/;
+  const OBJ=/\b(acceleration (area|zone)s?|go-to areas?|renewable(s)?( energy)? (acceleration )?(zones?|areas?)|fast-track\w*[^.]{0,40}(zones?|areas?|procedures?|permitting)|zoning|spatial plan\w*|law|act|bill|regulation\w*|ordinance|decree|rules?|framework|scheme|programme|program|policy|strategy|tariff\w*|market design|compensation|permitting (reform|rules)|obszar\w* przyspieszon\w*|ustaw\w*|rozporządz\w*)\b/;
   if(!(ACT.test(h)&&OBJ.test(h))) return false;
   if((s.cos||[]).some(c=>c!=='ALL'&&c!=='OTHER')) return false;
   if((s.assets||[]).length) return false;
@@ -3203,6 +3201,7 @@ window.POL_EXCLUDE=new Set(['e3','w4','w5','n14','h27','u11','h24','n15','o3','x
 <script>
 /* v72: categorisation audit fixes (curated items) */
 window.STAGE_FIX={   /* Signal Monitor lifecycle stage */
+  y4:'CON', y1:'CON', y3:'FIN',  /* v99 */
   o4:'CON',  /* batteries delivered, energisation due Dec → construction, not commissioning */
   h19:'CON', /* all turbines installed → construction milestone */
   h18:'COM', /* first electricity to grid → commissioning */
@@ -3607,7 +3606,7 @@ window.SIG_EXCLUDE=new Set(['ic9']); /* EDF "not withdrawing" — no change, not
     const BYURL = {}; (SIGNALS||[]).forEach(s=>{ tag(s); if(s.hl_fix && s.src_url) BYURL[s.src_url]=s.hl_fix; });
     document.querySelectorAll('#view .nhd > a').forEach(a=>{
       if(a.dataset.hlfix) return;
-      if(a.parentNode.querySelector('.ntr:not(.nor)')) return;   /* v96: Polish source — keep Polish headline on top, English translation underneath */
+      if(a.parentNode.querySelector('.ntr:not(.nor)')) return;   /* v96: Polish source — Polish headline on top, English translation underneath */
       const orig = a.textContent; const f = fixFor(orig) || BYURL[a.getAttribute('href')];
       if(!f) return;
       a.dataset.hlfix='1'; a.title='Original headline: '+orig; a.textContent=f;
@@ -4135,27 +4134,45 @@ details.rv[open]>summary{border-bottom:1px solid var(--line)}
 })();
 </script>
 <script>
-/* ═══ v96: Poland's first renewables acceleration areas (Greater Poland) — Policy & Market Design ═══ */
+/* ═══ v99 update (2 Nov 2026): 3 stories (28–30 Oct 2026) — exact publisher headlines ═══ */
 (function(){
-  const ID='pz1';
-  if(!SIGNALS.some(s=>s.id===ID)){
-    CLS[ID]={sub:'LEG',tech:['solar']};
-    ASSET_FIX[ID]=[];
-    const x=normalise({id:ID,date:'2026-10-30',cos:['ALL'],region:'Greater Poland',
-      title:'Poland approves first fast-track renewable energy zones',publisher:'Notes From Poland',
-      links:[{label:'Notes From Poland — article',url:'https://notesfrompoland.com/2026/10/30/poland-approves-first-fast-track-renewable-energy-zones/',type:'press'},
-             {label:'Poland Insight — Ministry of Climate statement (26 Oct)',url:'https://polandinsight.com/poland-renewable-energy-acceleration-areas-wielkopolska-48257/',type:'press'},
-             {label:'Renewables Now — article',url:'https://renewablesnow.com/news/poland-designates-first-areas-for-fast-track-solar-roll-out-1303947/',type:'press'}],
-      unit:'RED III renewables acceleration areas — Greater Poland (Wielkopolska)',
-      change:'Greater Poland regional assembly adopts Poland’s first renewables acceleration areas: 105.4 ha for solar in Złotów, Lwówek, Rawicz and Słupca',
-      why:'First use of the RED III fast-track permitting mechanism in Poland; sets the template for other regions.',
-      summary:'On 26 October the Greater Poland regional assembly adopted Poland’s first plans for renewables acceleration areas, covering 105.4 hectares for solar in four municipalities, with technical potential of 66–80 MWp. Planning and much of the environmental assessment are done upfront; environmental authorities get 45 days to review projects of 150 kW or more. The EU deadline was 21 February 2026.'});
-    x.cos_headline=[];
-    SEED.push(x); SIGNALS.push(x);
-  }
+  if(typeof CO!=='undefined'){ CO.QAIR=CO.QAIR||{c:'#00a3a1',label:'Qair'}; }
+  const ITEMS=[
+   {id:'y1',date:'2026-10-28',cos:['QAIR'],region:'Masovia',sub:'CON',tech:['solar'],assets:['Wierzbica PV (80 MW)'],
+    title:'Qair turns sod on 80-MW solar farm in Poland',publisher:'Renewables Now',
+    links:[{label:'Renewables Now — article',url:'https://renewablesnow.com/news/qair-turns-sod-on-80-mw-solar-farm-in-poland-1303850/',type:'press'}],
+    unit:'Qair Polska — Wierzbica PV (80 MW)',
+    change:'Qair starts construction of the 80 MW Wierzbica PV plant in Masovia',
+    why:'Adds utility-scale solar on degraded land, financed with National Recovery Plan (KPO) preferential debt.',
+    summary:'The Polish unit of French developer Qair officially started construction of the 80 MW Wierzbica PV plant in Mazowieckie province, on 64 ha of agricultural wasteland and post-industrial land. Wierzbica, the 18 MW Jenków wind farm and the 105 MW Grudziądz PV park are financed with a PLN 350m preferential KPO loan.'},
+   {id:'y3',date:'2026-10-30',cos:['POLENERGIA'],region:'National',sub:'FIN',tech:['onshore'],
+    assets:['Dębsk wind farm (121 MW)','Mycielin wind farm (46 MW)','Grabowo wind farm (44 MW)','Szymankowo wind farm (38 MW)','Kostomłoty wind farm (27 MW)'],
+    title:'Polenergia secures PLN 1.35 billion for growth and refinancing',publisher:'Polenergia',
+    links:[{label:'Polenergia — press release',url:'https://www.polenergia.pl/en/polenergia-secures-pln-1-35-billion-for-growth-and-refinancing/',type:'official'},
+           {label:'Renewables Now — article',url:'https://renewablesnow.com/news/polenergia-borrows-eur-307m-for-wind-energy-refinancing-1304051/',type:'press'}],
+    unit:'Polenergia — onshore wind portfolio (276 MW)',
+    change:'Polenergia signs PLN 1.35bn, 15-year portfolio loan for five onshore wind farms (276 MW)',
+    why:'Refinances operating wind assets and frees new capital for Polenergia’s growth plan.',
+    summary:'Polenergia signed a 15-year financing agreement of up to PLN 1.35bn with a bank consortium covering five onshore wind farms totalling 276 MW. About PLN 740m refinances existing loans and PLN 99m funds a debt service reserve; the remainder is new money for investment.'},
+   {id:'y4',date:'2026-10-30',cos:['PGE'],region:'Pomerania',sub:'CON',tech:['offshore'],assets:['Gdańsk T5 offshore installation terminal','Baltica 2 (~1.5 GW)'],
+    title:'Poland opens new Baltic port terminal to support offshore wind push',publisher:'Polskie Radio',
+    links:[{label:'Polskie Radio — article',url:'https://www.polskieradio.pl/395/7784/Artykul/3747662,poland-opens-new-baltic-port-terminal-to-support-offshore-wind-push',type:'press'},
+           {label:'Renewables Now — article',url:'https://renewablesnow.com/news/polish-port-of-gdansk-inaugurates-terminal-for-offshore-wind-farms-1304068/',type:'press'}],
+    unit:'Port of Gdańsk — T5 offshore installation terminal',
+    change:'PLN 1.2bn T5 offshore installation terminal opens in Gdańsk; Baltica 2 component logistics move from Rønne to Gdańsk',
+    why:'Gives Polish offshore projects a domestic installation port, cutting transport distance and schedule risk.',
+    summary:'Terminal T5 at the Port of Gdańsk, built for about PLN 1.2bn with KPO support, opened on 30 October. It adds 21.3 ha of reclaimed land and about 800 m of deep-water quays for jack-up vessels, and will first serve PGE–Ørsted’s Baltica 2, whose components were previously shipped from Rønne.'}
+  ];
+  ITEMS.forEach(x=>{ CLS[x.id]={sub:x.sub,tech:x.tech}; x.cat='x'; if(x.assets) ASSET_FIX[x.id]=x.assets.slice(); });
+  const have=new Set(SEED.map(s=>s.id));
+  const add=ITEMS.filter(x=>!have.has(x.id)).map(x=>{const n=normalise(x); n.newsOnly=!!x.newsOnly; if(x.cos.every(c=>c==='ALL')) n.cos_headline=[]; return n;});
+  SEED.push(...add);
+  const inSig=new Set(SIGNALS.map(s=>s.id));
+  add.forEach(s=>{ if(!inSig.has(s.id)) SIGNALS.push(s); });
   render();
 })();
 </script>
+
 <script>
 /* v87: every script block has run — the feed may now be applied and the counts revealed.
    In the browser console, console.table(__pppCounts) lists every visible change of the News Feed count. */
