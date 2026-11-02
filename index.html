@@ -309,7 +309,7 @@ button.tg.as:hover{background:#fbd3e1}
 .ppp-loading #view{opacity:.35;transition:opacity .2s}
 </style>
 <script>
-document.documentElement.setAttribute('data-ppp','v104');
+document.documentElement.setAttribute('data-ppp','v105');
 document.documentElement.classList.add('ppp-loading');
 window.__quiet=true;
 window.__parsed=new Promise(function(r){window.__parsedOk=r;});
@@ -4503,6 +4503,159 @@ details.rv[open]>summary{border-bottom:1px solid var(--line)}
   bind('nlWord',word); bind('nlPrint',pdf); bind('nlDownload',htmlFile); bind('nlEml',eml); bind('nlCopy',copy);
   const st=document.createElement('style'); st.textContent='.nl-dl-lab{font-family:Poppins,Arial,sans-serif;font-size:11.5px;font-weight:600;color:#3f1d4f;margin-right:2px}.nl-actions{flex-wrap:wrap;align-items:center}';
   document.head.appendChild(st);
+})();
+</script>
+
+<style>
+/* ═══ v105: multi-select filters + reset per filter ═══ */
+#filters .ms{position:relative;margin:0;display:flex;flex-direction:column;gap:4px;min-width:0}
+#filters .ms-head{display:flex;align-items:center;gap:6px;min-height:18px}
+#filters .ms-head>span{font-size:12px;font-weight:600;color:var(--dim)}
+#filters .ms-n{font-size:10px;font-weight:700;background:var(--purple);color:#fff;border-radius:9px;padding:0 6px;line-height:16px}
+#filters .ms-reset{margin-left:auto;border:0;background:none;font-family:inherit;font-size:10.5px;font-weight:600;color:var(--red);padding:0;cursor:pointer;white-space:nowrap}
+#filters .ms-reset[disabled]{color:var(--mute);opacity:.45;cursor:default}
+#filters .ms-btn{height:36px;width:100%;display:flex;align-items:center;gap:6px;text-align:left;font-family:inherit;font-size:12px;padding:0 9px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);cursor:pointer;min-width:0}
+#filters .ms .ms-btn span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px;font-weight:inherit;color:inherit}
+#filters .ms-btn::after{content:'▾';font-size:11px;color:var(--mute)}
+#filters .ms.on .ms-btn{border-color:var(--purple);background:var(--purple-lt);color:var(--purple);font-weight:600}
+#filters .ms.open .ms-btn{outline:2px solid var(--purple)}
+#filters .ms-pop{display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:60;width:max(100%,290px);background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 32px rgba(40,20,50,.18);padding:8px}
+#filters .ms.open .ms-pop{display:block}
+#filters .ms-q{width:100%;box-sizing:border-box;font-family:inherit;font-size:12px;padding:7px 9px;border:1px solid var(--line);border-radius:7px;margin-bottom:6px}
+#filters .ms-list{max-height:280px;overflow:auto}
+#filters .ms-list label{display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:6px;cursor:pointer}
+#filters .ms-list label[hidden]{display:none}
+#filters .ms-list label:hover{background:var(--bg)}
+#filters .ms-list label.sub{padding-left:22px}
+#filters .ms-list label span{font-size:12px;font-weight:400;color:var(--ink)}
+#filters .ms-list input{accent-color:var(--purple);margin:0;flex:none}
+#filters .ms-g{font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);padding:8px 6px 3px}
+#filters .ms-none{font-size:11.5px;color:var(--mute);padding:8px 6px}
+#filters .ms-foot{display:flex;gap:6px;border-top:1px solid var(--line);margin-top:6px;padding-top:7px}
+#filters .ms-foot button{font-family:inherit;font-size:11px;padding:5px 10px;border-radius:6px;border:1px solid var(--line);background:#fff;color:var(--purple);cursor:pointer}
+#filters .ms-foot button.pri{margin-left:auto;background:var(--purple);border-color:var(--purple);color:#fff}
+#filters .dwrap .dh{display:flex;align-items:center;gap:6px}
+</style>
+<script>
+/* ═══ v105: multi-select filters + reset per filter ═══
+   Company, Signal Type, Asset, Geography and Technology accept several values (tick boxes).
+   Several values in ONE filter = match ANY of them; different filters still combine (AND).
+   Each filter has its own "✕ Reset"; the date range has one too; "Reset all filters" is unchanged.
+   News Feed and Signal Monitor keep their own selections (v63 behaviour is preserved).             */
+(function(){
+  document.documentElement.setAttribute('data-ppp','v105');
+  const DIMS=['co','type','asset','region','tech'];
+  const NAME={co:'Company',type:'Signal Type',asset:'Asset',region:'Geography',tech:'Technology'};
+  const GET={co:s=>s.cos||[],asset:s=>s.assets||[],region:s=>s.regions||[],tech:s=>s.tech||[]};
+  const arr=v=>Array.isArray(v)?v.filter(x=>x!==''&&x!=null):(v?[v]:[]);
+  const fold=t=>String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ł/g,'l');
+  let ACTIVE=null;                       /* selections held aside while older code draws the filter bar */
+  const valsOf=d=>arr(ACTIVE?ACTIVE[d]:F[d]);
+
+  /* ---------- matching: OR inside a filter, AND across filters ---------- */
+  const inner=passes;
+  passes=function(s,skip){
+    const sel={}; DIMS.forEach(d=>{ sel[d]=valsOf(d); });
+    const saved={}; DIMS.forEach(d=>{ saved[d]=F[d]; F[d]=''; });
+    try{
+      for(const d of ['co','asset','region','tech']){
+        if(skip===d||!sel[d].length) continue;
+        const have=GET[d](s); if(!sel[d].some(v=>have.includes(v))) return false;
+      }
+      const ty=(view==='signals'&&skip!=='type')?sel.type:[];
+      if(!ty.length) return inner(s,skip);
+      return ty.some(v=>{ F.type=v; return inner(s,skip); });   /* existing Signal Type logic, one value at a time */
+    } finally { DIMS.forEach(d=>{ F[d]=saved[d]; }); }
+  };
+
+  /* ---------- filter bar ---------- */
+  const LAB={};
+  const cleanLab=t=>String(t||'').replace(/\u00a0/g,' ').replace(/\s*\(\d+\)\s*$/,'').replace(/^All — /,'').trim();
+  const labelOf=(d,v)=>(LAB[d]&&LAB[d][v])||(d==='co'?coLabel(v):d==='tech'?(TECH_LABEL[v]||v):v);
+  let openDim='', openQ='', openScroll=0, focusV=null;
+  const setVals=(d,vals)=>{ F[d]=vals.length?[...new Set(vals)]:''; render(); };
+
+  const _rf=renderFilters;
+  renderFilters=function(){
+    ACTIVE={}; DIMS.forEach(d=>{ ACTIVE[d]=F[d]; F[d]=''; });
+    try{ _rf(); } finally { DIMS.forEach(d=>{ F[d]=ACTIVE[d]; }); ACTIVE=null; }
+    const box=document.getElementById('filters'); if(!box) return;
+    box.querySelectorAll('select[data-f]').forEach(sel=>{
+      const d=sel.dataset.f; if(!DIMS.includes(d)) return;
+      const cur=arr(F[d]); LAB[d]=LAB[d]||{};
+      const allTxt=(sel.querySelector('option[value=""]')||{}).textContent||'All';
+      const rows=[], seen=new Set();
+      const add=(o,grp)=>{ if(o.value==='') return; seen.add(o.value); LAB[d][o.value]=cleanLab(o.textContent);
+        rows.push({v:o.value,t:o.textContent.replace(/^\u00a0+/,'').trim(),sub:grp&&o.value.includes(':')}); };
+      [...sel.children].forEach(ch=>{ if(ch.tagName==='OPTGROUP'){ rows.push({g:ch.label}); [...ch.children].forEach(o=>add(o,true)); } else add(ch,false); });
+      cur.filter(v=>!seen.has(v)).forEach(v=>rows.push({v,t:labelOf(d,v)+' (0)'}));   /* keep ticked values visible even at 0 */
+      const lab=((sel.previousElementSibling||{}).textContent||NAME[d]).trim();
+      const btn=!cur.length?allTxt:cur.length<=2?cur.map(v=>labelOf(d,v)).join(', '):cur.length+' selected';
+      const w=document.createElement('div'); w.className='fsel ms'+(cur.length?' on':''); w.dataset.ms=d;
+      w.innerHTML=`<div class="ms-head"><span>${esc(lab)}</span>${cur.length?`<b class="ms-n">${cur.length}</b>`:''}<button type="button" class="ms-reset" data-msreset ${cur.length?'':'disabled'} title="Reset ${esc(lab)}">✕ Reset</button></div>
+        <button type="button" class="ms-btn" title="${esc(cur.map(v=>labelOf(d,v)).join(', ')||allTxt)}"><span>${esc(btn)}</span></button>
+        <div class="ms-pop"><input class="ms-q" type="search" placeholder="Search ${esc(lab.toLowerCase())}…" aria-label="Search ${esc(lab)}">
+          <div class="ms-list">${rows.map(r=>r.g!=null?`<div class="ms-g">${esc(r.g)}</div>`:
+            `<label class="${r.sub?'sub':''}"><input type="checkbox" data-v="${esc(r.v)}" ${cur.includes(r.v)?'checked':''}><span>${esc(r.t)}</span></label>`).join('')}<div class="ms-none" hidden>No matches</div></div>
+          <div class="ms-foot"><button type="button" data-msall>Select shown</button><button type="button" data-msclear>Clear</button><button type="button" class="pri" data-msdone>Done</button></div></div>`;
+      (sel.closest('label.fsel')||sel).replaceWith(w);
+    });
+    const dh=box.querySelector('.dwrap .dh');
+    if(dh){ const def=(F.from||'')==='2024-01-01'&&!F.to;
+      dh.insertAdjacentHTML('beforeend',`<button type="button" class="ms-reset" data-dreset ${def?'disabled':''} title="Reset date range">✕ Reset</button>`); }
+    const chips=document.getElementById('chips');
+    if(chips){
+      chips.innerHTML=DIMS.filter(d=>d!=='type'||view!=='news').flatMap(d=>arr(F[d]).map(v=>
+        `<span class="chip-x" title="${esc(NAME[d])}">${esc(labelOf(d,v))}<button data-cd="${d}" data-cv="${esc(v)}" aria-label="Remove">✕</button></span>`)).join('');
+      chips.querySelectorAll('button').forEach(b=>b.onclick=()=>setVals(b.dataset.cd,arr(F[b.dataset.cd]).filter(x=>x!==b.dataset.cv)));
+    }
+    if(openDim){                                                    /* keep the open list open after redraw */
+      const ms=box.querySelector(`.ms[data-ms="${openDim}"]`);
+      if(!ms){ openDim=''; return; }
+      ms.classList.add('open'); const q=ms.querySelector('.ms-q'); q.value=openQ; filterList(ms);
+      ms.querySelector('.ms-list').scrollTop=openScroll;
+      const f=focusV!=null&&[...ms.querySelectorAll('.ms-list input')].find(i=>i.dataset.v===focusV);
+      (f||q).focus({preventScroll:true}); focusV=null;
+    }
+  };
+  function filterList(ms){
+    const q=fold(ms.querySelector('.ms-q').value); let n=0, grp=null, gn=0;
+    const close=()=>{ if(grp) grp.hidden=!gn; };
+    [...ms.querySelector('.ms-list').children].forEach(el=>{
+      if(el.classList.contains('ms-g')){ close(); grp=el; gn=0; return; }
+      if(el.tagName!=='LABEL') return;
+      const hit=!q||fold(el.textContent).includes(q); el.hidden=!hit; if(hit){ n++; gn++; }
+    });
+    close(); ms.querySelector('.ms-none').hidden=n>0;
+  }
+  const keep=(ms,v)=>{ openDim=ms.dataset.ms; openQ=ms.querySelector('.ms-q').value; openScroll=ms.querySelector('.ms-list').scrollTop; focusV=v==null?null:v; };
+  const closeAll=()=>{ document.querySelectorAll('#filters .ms.open').forEach(x=>x.classList.remove('open')); openDim=''; };
+
+  const box=document.getElementById('filters');
+  box.addEventListener('click',e=>{
+    if(e.target.closest('[data-dreset]')){ F.from='2024-01-01'; F.to=''; render(); return; }
+    const ms=e.target.closest('.ms'); if(!ms) return;
+    e.stopPropagation();
+    const d=ms.dataset.ms;
+    if(e.target.closest('[data-msreset]')){ closeAll(); setVals(d,[]); return; }
+    if(e.target.closest('.ms-btn')){ const was=ms.classList.contains('open'); closeAll();
+      if(!was){ openDim=d; openQ=''; ms.classList.add('open'); ms.querySelector('.ms-q').focus({preventScroll:true}); } return; }
+    if(e.target.closest('[data-msdone]')){ closeAll(); return; }
+    if(e.target.closest('[data-msclear]')){ keep(ms); setVals(d,[]); return; }
+    if(e.target.closest('[data-msall]')){ keep(ms);
+      const vis=[...ms.querySelectorAll('.ms-list label:not([hidden]) input')].map(i=>i.dataset.v);
+      setVals(d,arr(F[d]).concat(vis)); return; }
+  });
+  box.addEventListener('change',e=>{
+    const cb=e.target.closest('.ms-list input[type=checkbox]'); if(!cb) return;
+    const ms=cb.closest('.ms'), d=ms.dataset.ms, cur=arr(F[d]); keep(ms,cb.dataset.v);
+    setVals(d,cb.checked?cur.concat(cb.dataset.v):cur.filter(v=>v!==cb.dataset.v));
+  });
+  box.addEventListener('input',e=>{ if(e.target.classList.contains('ms-q')){ openQ=e.target.value; filterList(e.target.closest('.ms')); } });
+  box.addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.classList.contains('ms-q')) e.preventDefault(); });
+  document.addEventListener('click',e=>{ if(openDim&&!e.target.closest('#filters .ms')) closeAll(); });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&openDim) closeAll(); });
+  render();
 })();
 </script>
 
