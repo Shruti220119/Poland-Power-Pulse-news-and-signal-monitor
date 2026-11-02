@@ -309,7 +309,7 @@ button.tg.as:hover{background:#fbd3e1}
 .ppp-loading #view{opacity:.35;transition:opacity .2s}
 </style>
 <script>
-document.documentElement.setAttribute('data-ppp','v95');
+document.documentElement.setAttribute('data-ppp','v96');
 document.documentElement.classList.add('ppp-loading');
 window.__quiet=true;
 window.__parsed=new Promise(function(r){window.__parsedOk=r;});
@@ -2394,11 +2394,24 @@ render();
 </style>
 <script>
 /* v81: Policy & Market Design — analyst stage overrides and exclusions */
-window.POL_STAGE_FIX={x1:'RULE',x7:'RULE',h33:'RULE',x6:'SUPP',r5:'SUPP',u6:'SUPP',u10:'SUPP',rg7:'SUPP',rg8:'SUPP',
+window.POL_STAGE_FIX={pz1:'LAW',x1:'RULE',x7:'RULE',h33:'RULE',x6:'SUPP',r5:'SUPP',u6:'SUPP',u10:'SUPP',rg7:'SUPP',rg8:'SUPP',
  r1:'LAW',r2:'LAW',r8:'LAW',n13:'LAW',u4:'LAW',a1:'LAW',a2:'LAW',rg1:'LAW',rg2:'LAW',rg3:'LAW',rg5:'LAW',v3:'LAW',v5:'LAW',
  r3:'PROP',r6:'PROP',r7:'PROP',h2:'PROP',h4:'PROP',h23:'PROP',rg4:'PROP',rg6:'PROP',rg9:'PROP',v4:'PROP'};
 /* national policy items kept although a company/asset tag exists; company- or project-specific items removed */
-window.POL_INCLUDE=new Set(['u4','rg1']);
+window.POL_INCLUDE=new Set(['u4','rg1','pz1']);
+/* v96: a policy / regulatory announcement = a public authority (government, ministry, Sejm, regulator, regional
+   assembly, municipality, EU) approves / adopts / designates / introduces a framework — zones, acceleration areas,
+   rules, schemes, laws, programmes — and no single company or project is the subject. Such items belong to
+   Policy & Market Design even when they mention a technology (solar, wind) or a capacity potential (MW). */
+window.isPolicyAnnouncement=function(s){
+  const h=((s.title||'')+' '+(s.title_pl||'')+' '+(s.change||'')).toLowerCase();
+  const ACT=/\b(approv\w*|adopt\w*|designat\w*|introduc\w*|launch\w*|establish\w*|enact\w*|pass(es|ed)?|sign(s|ed)? into law|publish\w*|unveil\w*|set(s)? out|amend\w*|uchwal\w*|przyj\w*|wyznacz\w*)\b/;
+  const OBJ=/\b(acceleration (area|zone)s?|go-to areas?|renewable(s)?( energy)? (acceleration )?(zones?|areas?)|fast-track\w*[^.]{0,40}(zones?|areas?|procedures?|permitting)|zoning|spatial plan\w*|law|act|bill|regulation\w*|ordinance|decree|rules?|framework|scheme|programme|program|policy|strategy|tariff\w*|market design|permitting (reform|rules)|obszar\w* przyspieszon\w*|ustaw\w*|rozporządz\w*)\b/;
+  if(!(ACT.test(h)&&OBJ.test(h))) return false;
+  if((s.cos||[]).some(c=>c!=='ALL'&&c!=='OTHER')) return false;
+  if((s.assets||[]).length) return false;
+  return true;
+};
 window.POL_EXCLUDE=new Set(['e3','w4','w5','n14','h27','u11','h24','n15','o3','x4','a4','h8','h10','h30']);
 </script>
 <script>
@@ -2448,6 +2461,7 @@ window.POL_EXCLUDE=new Set(['e3','w4','w5','n14','h27','u11','h24','n15','o3','x
   function isPolicyItem(s){
     const h=((s.title||'')+' '+(s.title_pl||'')+' '+(s.change||'')).toLowerCase();
     const marketOnly=!(s.cos||[]).some(c=>c!=='ALL'&&c!=='OTHER');
+    if(window.isPolicyAnnouncement&&isPolicyAnnouncement(s)) return true;   /* v96 */
     const POLICY=/\b(law|laws|bill|act amendment|amendment|draft|deregulat\w*|regulation|regulations|regulatory|ordinance|decree|state aid|grants?|subsid\w* scheme|schedules?\b.*\bauctions?|government work)\b|ustaw|rozporz[aą]dz|deregulac/;
     if(/\bstate aid\b|\bderegulat/.test(h)) return true;
     if(marketOnly && POLICY.test(h)) return true;
@@ -2488,6 +2502,7 @@ window.POL_EXCLUDE=new Set(['e3','w4','w5','n14','h27','u11','h24','n15','o3','x
     if(window.POL_STAGE_FIX&&POL_STAGE_FIX[s.id]) return POL_STAGE_FIX[s.id];
     const h=((s.title||'')+' '+(s.title_pl||'')+' '+(s.change||'')).toLowerCase();
     if(/state aid|grant|subsid|co-financ|funding|recovery plan|\brrf\b|kpo|nfoś|support (scheme|system|programme|mechanism)|auction|aukcj|\bcfd\b|contract for difference/.test(h)) return 'SUPP';
+    if(/\b(approv(es|ed|al)|adopt(s|ed)?|designat\w+|enact\w*|in force|uchwali\w*|przyj\w+)\b/.test(h) && !/\bdraft\b|consultation/.test(h)) return 'LAW';   /* v96 */
     if(/\bdraft\b|consultation|proposal|proposes|plans? |work schedule|strategy|overhaul|reform plan/.test(h)) return 'PROP';
     if(/\bure\b|\bpse\b|regulator|tariff|grid code|balancing|rules update|karta aktualizacji|capacity (market|mechanism)|flexibilit|terms and conditions|connection rules/.test(h)||['TAR','GRID','FLEX','CAP'].includes(s.sub)) return 'RULE';
     if(/\b(sejm|senate|senat|parliament|passes|passed|adopt(s|ed)?|signs?|signed|council of ministers|cabinet|in force|takes effect|enters? into force|vote|uchwali|przyj[aą]ł|podpisa)\b/.test(h)) return 'LAW';
@@ -2506,9 +2521,10 @@ window.POL_EXCLUDE=new Set(['e3','w4','w5','n14','h27','u11','h24','n15','o3','x
       const cos=(s.cos_headline||s.cos||[]).filter(c=>c!=='ALL'&&c!=='OTHER');   /* live items: companies in the headline only */
       if(cos.length||(s.assets||[]).length) return false;   /* company- or asset-specific → not a policy signal */
       if(POL_COMPANY.test(head+' '+(s.change||''))) return false;
-      if(['LEAD','RES','STR','SCH','ANN','MOU','CON','FIN','MA','SET','ADQ','GRID'].includes(s.sub)) return false;
+      if(!(window.isPolicyAnnouncement&&isPolicyAnnouncement(s)) && ['LEAD','RES','STR','SCH','ANN','MOU','CON','FIN','MA','SET','ADQ','GRID'].includes(s.sub)) return false;
     }
     if(forced) return true;
+    if(window.isPolicyAnnouncement&&isPolicyAnnouncement(s)) return true;   /* v96 */
     if(['LEG','SUP','TAR','CAP','FLEX'].includes(s.sub)) return true;
     return /\b(law|bill|act|amendment|regulation|ordinance|deregulat\w*|state aid|capacity market|cfd|contract for difference|market reform|energy policy|consultation|tariff|support scheme)\b|ustaw|rozporz[aą]dz/.test(polText(s));
   }
@@ -2835,10 +2851,11 @@ window.POL_EXCLUDE=new Set(['e3','w4','w5','n14','h27','u11','h24','n15','o3','x
         }
         groups[k].forEach(s => {
           const l = (s.links||[])[0];
-          const head = l ? `<a href="${esc(l.url)}" style="color:#1F1F1F;text-decoration:none">${esc(s.title)}</a>` : esc(s.title);
+          const plH = s.title_pl && s.title_pl!==s.title; const topT = plH ? s.title_pl : s.title;
+          const head = l ? `<a href="${esc(l.url)}" style="color:#1F1F1F;text-decoration:none">${esc(topT)}</a>` : esc(topT);
           body += `<div style="margin:0 0 13px">
             <div style="font-family:Arial,sans-serif;font-size:10pt;font-weight:bold;line-height:1.35;color:#1F1F1F">${head} (${esc(srcName(s))}, ${fmtShort(s.date)})</div>
-            ${s.title_pl && s.title_pl!==s.title ? `<div style="font-family:Arial,sans-serif;font-size:9pt;color:#7F7F7F;font-style:italic">Original (PL): ${esc(s.title_pl)}</div>` : ''}
+            ${plH ? `<div style="font-family:Arial,sans-serif;font-size:9pt;color:#595959">English translation: ${esc(s.title)}</div>` : ''}
             <div style="font-family:Arial,sans-serif;font-size:10pt;line-height:1.5;color:#000;margin-top:2px">${esc(nlSummary(nlText(s)))}</div>
           </div>`;
         });
@@ -3590,6 +3607,7 @@ window.SIG_EXCLUDE=new Set(['ic9']); /* EDF "not withdrawing" — no change, not
     const BYURL = {}; (SIGNALS||[]).forEach(s=>{ tag(s); if(s.hl_fix && s.src_url) BYURL[s.src_url]=s.hl_fix; });
     document.querySelectorAll('#view .nhd > a').forEach(a=>{
       if(a.dataset.hlfix) return;
+      if(a.parentNode.querySelector('.ntr:not(.nor)')) return;   /* v96: Polish source — keep Polish headline on top, English translation underneath */
       const orig = a.textContent; const f = fixFor(orig) || BYURL[a.getAttribute('href')];
       if(!f) return;
       a.dataset.hlfix='1'; a.title='Original headline: '+orig; a.textContent=f;
@@ -4113,6 +4131,28 @@ details.rv[open]>summary{border-bottom:1px solid var(--line)}
     };
     if(window.__rvOpen){ const d=document.querySelector(`details[data-rv="${CSS.escape(window.__rvOpen)}"]`); if(d){ d.open=true; } }
   };
+  render();
+})();
+</script>
+<script>
+/* ═══ v96: Poland's first renewables acceleration areas (Greater Poland) — Policy & Market Design ═══ */
+(function(){
+  const ID='pz1';
+  if(!SIGNALS.some(s=>s.id===ID)){
+    CLS[ID]={sub:'LEG',tech:['solar']};
+    ASSET_FIX[ID]=[];
+    const x=normalise({id:ID,date:'2026-10-30',cos:['ALL'],region:'Greater Poland',
+      title:'Poland approves first fast-track renewable energy zones',publisher:'Notes From Poland',
+      links:[{label:'Notes From Poland — article',url:'https://notesfrompoland.com/2026/10/30/poland-approves-first-fast-track-renewable-energy-zones/',type:'press'},
+             {label:'Poland Insight — Ministry of Climate statement (26 Oct)',url:'https://polandinsight.com/poland-renewable-energy-acceleration-areas-wielkopolska-48257/',type:'press'},
+             {label:'Renewables Now — article',url:'https://renewablesnow.com/news/poland-designates-first-areas-for-fast-track-solar-roll-out-1303947/',type:'press'}],
+      unit:'RED III renewables acceleration areas — Greater Poland (Wielkopolska)',
+      change:'Greater Poland regional assembly adopts Poland’s first renewables acceleration areas: 105.4 ha for solar in Złotów, Lwówek, Rawicz and Słupca',
+      why:'First use of the RED III fast-track permitting mechanism in Poland; sets the template for other regions.',
+      summary:'On 26 October the Greater Poland regional assembly adopted Poland’s first plans for renewables acceleration areas, covering 105.4 hectares for solar in four municipalities, with technical potential of 66–80 MWp. Planning and much of the environmental assessment are done upfront; environmental authorities get 45 days to review projects of 150 kW or more. The EU deadline was 21 February 2026.'});
+    x.cos_headline=[];
+    SEED.push(x); SIGNALS.push(x);
+  }
   render();
 })();
 </script>
