@@ -1,6 +1,25 @@
 {
- "updated": "2026-11-03T12:11:51+00:00",
+ "updated": "2026-11-03T13:36:06+00:00",
  "signals": [
+  {
+   "id": "live-ef9c59194a",
+   "date": "2026-11-03",
+   "title": "Poland has EU’s second-highest electricity prices accounting for cost of living",
+   "summary": "Prices have also risen faster than in most EU countries.",
+   "links": [
+    {
+     "label": "Notes From Poland — article",
+     "url": "https://notesfrompoland.com/2026/11/03/poland-has-eus-second-highest-electricity-prices-accounting-for-cost-of-living/",
+     "type": "press"
+    }
+   ],
+   "cos": [
+    "ALL"
+   ],
+   "publisher": "Notes From Poland",
+   "lang": "en",
+   "region": "National"
+  },
   {
    "id": "live-e8da7081b1",
    "date": "2026-11-02",
