@@ -3086,7 +3086,7 @@ window.POL_EXCLUDE=new Set(['e3','w4','w5','n14','h27','u11','h24','n15','o3','x
 </script>
 <script>
 /* ═══ v68: strict monitoring-scope filter for LIVE (auto-fetched) items ═══
-   A live item is shown only if its headline is clearly about the monitoring scope
+   A live item is shown only if its headline or its content (v107) is clearly about the monitoring scope
    (energy technology, power-market policy, or a monitored company/body) and is not
    about an off-scope topic (history, war, politics, defence, opinion, society, sport).
    Applies to News Feed, Signal Monitor and Newsletter. Curated items are unaffected. */
@@ -3097,7 +3097,16 @@ window.POL_EXCLUDE=new Set(['e3','w4','w5','n14','h27','u11','h24','n15','o3','x
   const OFF_SOFT=/\bpozew|\bpozw[aeu]|\bwyrok|lawsuit|\bsues?\b/i;
   const SOFT_EXCEPT=/decyzj|pozwolen|koncesj|środowisk|ustaw|rozporządz|aukcj|taryf|licenc|przetarg|\bure\b|\bwsa\b|\bnsa\b|permit|licen[cs]e|auction|tariff|environmental decision/i;
   const head=s=>(s.title||'')+' '+(s.title_pl||'')+' '+(s.src_title||'')+' '+(s.title_clear||'');   /* v83: vague headlines are judged with their descriptive title */
-  const offScope=s=>{ if(!s||!s.auto) return false; const h=head(s); return OUT.test(h) || !IN.test(h) || (OFF_SOFT.test(h) && !SOFT_EXCEPT.test(h)); };
+  /* v107: scope is judged on the headline AND the news content (summary / what changed / why it matters).
+     Items already shortlisted by the feed script on headline + article text carry s.scope. */
+  const body=s=>[s.summary,s.change,s.why,s.unit].filter(Boolean).join(' ');
+  const cnt=(rx,t)=>(String(t||'').match(new RegExp(rx.source,'gi'))||[]).length;
+  const offScope=s=>{ if(!s||!s.auto) return false; const h=head(s), c=body(s);
+    if(OUT.test(h)) return true;                                           /* off-scope headline */
+    if(OFF_SOFT.test(h) && !SOFT_EXCEPT.test(h+' '+c)) return true;
+    if(c && cnt(OUT,c) > cnt(IN,c)+3*cnt(IN,h)) return true;              /* content mainly off-scope */
+    if(s.scope && s.scope.basis) return false;                             /* shortlisted on headline + content */
+    return !IN.test(h+' '+c); };
   window.offScopeLive=offScope;
   const _p=passes; passes=function(s,skip){ if(offScope(s)) return false; return _p(s,skip); };
   render();
@@ -4659,6 +4668,35 @@ details.rv[open]>summary{border-bottom:1px solid var(--line)}
 })();
 </script>
 
+<script>
+/* ═══ v106 update (4 Nov 2026): two news items (29 Oct – 3 Nov 2026) — exact publisher headlines ═══
+   Both are News Feed items only (not build-out or policy changes), so they do not appear in the Signal Monitor. */
+(function(){
+  const ITEMS=[
+   {id:'z1',date:'2026-10-29',cos:['ENEA'],region:'National',sub:'FIN',tech:['cross'],assets:[],newsOnly:true,
+    title:'Signing of a program agreement regarding a hybrid bond issue program and the intention to carry out the first issue',publisher:'Enea',
+    links:[{label:'Enea — current report 48/2026',url:'https://ir.enea.pl/en/pr/879206/signing-of-a-program-agreement-regarding-a-hybrid-bond-issue-program-and-the-intention-to-carry-out-the-first-issue',type:'filing'}],
+    unit:'Enea S.A. — hybrid bond programme (up to PLN 5bn)',
+    change:'Enea signs a PLN 5bn hybrid bond programme with BGK, Pekao and PKO BP; first issue of up to PLN 2.5bn planned',
+    why:'Adds equity-like funding capacity for Enea’s investment programme.',
+    summary:'Enea signed a programme agreement with Bank Gospodarstwa Krajowego, Bank Pekao and PKO Bank Polski for hybrid bonds of up to PLN 5bn outstanding. It intends a first issue of up to PLN 2.5bn in Q4 2026 or H1 2027, at WIBOR 6M plus a margin, offered to qualified investors and listed on an alternative trading system.'},
+   {id:'z2',date:'2026-11-03',cos:['OTHER'],region:'National',sub:'FLEX',tech:['bess'],assets:[],newsOnly:true,
+    title:'Bulgaria\'s Electrohold Trade enters Polish battery storage market',publisher:'SeeNews',
+    links:[{label:'SeeNews — article',url:'https://seenews.com/news/bulgarias-electrohold-trade-enters-polish-battery-storage-market-1304267',type:'press'}],
+    unit:'Electrohold Trade / Aarx Energy / The Mobility House Energy — BESS optimisation',
+    change:'Electrohold Trade, Aarx Energy and The Mobility House Energy launch BESS optimisation services in Poland',
+    why:'Adds another route-to-market and optimisation provider for Polish battery owners.',
+    summary:'Bulgarian trader Electrohold Trade is entering Poland with battery optimisation services for standalone and co-located BESS, partnering with Warsaw-based licensed trader Aarx Energy and The Mobility House Energy. The offer covers connection, prequalification, round-the-clock trading, balancing and settlement for Polish storage investors.'}
+  ];
+  ITEMS.forEach(x=>{ CLS[x.id]={sub:x.sub,tech:x.tech}; x.cat='x'; ASSET_FIX[x.id]=x.assets.slice(); if(window.POL_EXCLUDE) POL_EXCLUDE.add(x.id); });
+  const have=new Set(SEED.map(s=>s.id));
+  const add=ITEMS.filter(x=>!have.has(x.id)).map(x=>{const n=normalise(x); n.newsOnly=true; return n;});
+  SEED.push(...add);
+  const inSig=new Set(SIGNALS.map(s=>s.id));
+  add.forEach(s=>{ if(!inSig.has(s.id)) SIGNALS.push(s); });
+  render();
+})();
+</script>
 <script>
 /* v87: every script block has run — the feed may now be applied and the counts revealed.
    In the browser console, console.table(__pppCounts) lists every visible change of the News Feed count. */
