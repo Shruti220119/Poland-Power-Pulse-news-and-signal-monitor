@@ -1,8 +1,14 @@
 name: Update live news feed
+# v6 (4 Nov 2026)
+#  - Runs at :07 and :37 past every hour. GitHub queues "top of the hour" schedules behind everyone
+#    else's, so */30 (:00 and :30) is the slot most often delayed or skipped.
+#  - Saves data/feed_status.json (what was checked in this run) and data/page_watch.json (links already
+#    seen on watched official pages) together with data/signals.json.
+#  - Writes a coverage summary on every run's page in the Actions tab.
 
 on:
   schedule:
-    - cron: "*/30 * * * *"     # every 30 minutes
+    - cron: "7,37 * * * *"      # every 30 minutes, off the busy :00/:30 slots
   workflow_dispatch:            # "Run workflow" button
 
 permissions:
@@ -35,10 +41,15 @@ jobs:
           if [ ! -f scripts/enrich_signals.py ]; then
             echo "::warning::scripts/enrich_signals.py is missing - items will show the RSS teaser instead of the article text, capacity and delay. Upload it into 'scripts'."
           fi
+          if [ "$HAS_TRANSLATOR" != "true" ]; then
+            echo "::warning::AZURE_TRANSLATOR_KEY secret is not set - Polish-language items are collected but NOT shown on the dashboard."
+          fi
           mkdir -p data
           [ -f data/signals.json ] || echo '{"updated": null, "signals": []}' > data/signals.json
+        env:
+          HAS_TRANSLATOR: ${{ secrets.AZURE_TRANSLATOR_KEY != '' }}
 
-      - name: Fetch live items
+      - name: Fetch live items (RSS feeds, Google News queries, official pages)
         run: python scripts/feed_fetcher.py
         env:
           AZURE_TRANSLATOR_KEY: ${{ secrets.AZURE_TRANSLATOR_KEY }}
@@ -52,27 +63,46 @@ jobs:
           AZURE_TRANSLATOR_KEY: ${{ secrets.AZURE_TRANSLATOR_KEY }}
           AZURE_TRANSLATOR_REGION: ${{ secrets.AZURE_TRANSLATOR_REGION }}
 
+      - name: Coverage summary
+        if: always()
+        run: |
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json, pathlib
+          p = pathlib.Path("data/feed_status.json")
+          if not p.exists():
+              print("### Feed status\nNo data/feed_status.json - the fetcher did not finish."); raise SystemExit
+          s = json.loads(p.read_text(encoding="utf-8"))
+          print("### Poland Power Pulse - feed run")
+          print(f"- Run (UTC): **{s['run_started_utc']} -> {s['run_finished_utc']}**")
+          print(f"- Registry sources checked: **{s['registry_sources_checked']} / {s['registry_sources']}**")
+          print(f"- Feeds / queries / pages OK: **{s['checks_ok']} / {s['checks_total']}**")
+          print(f"- New items this run: **{s['new_items_this_run']}** · items in feed: {s['items_in_feed']}")
+          print(f"- Translation: {s['translation']} · Polish items waiting for translation: {s['polish_items_waiting_for_translation']}")
+          if s["checks_failed"]:
+              print(f"- Failed this run (skipped, retried next run): {', '.join(s['checks_failed'])}")
+          print("\n| Check | Status | Items |\n|---|---|---|")
+          for k in ("rss", "google_news", "page_watch"):
+              for c in s[k]:
+                  print(f"| {k}: {c['source']} | {c.get('status')} | {c.get('items', 0)} |")
+          PY
+
       - name: Save feed to repository
         run: |
           set +e
           BRANCH="${GITHUB_REF_NAME}"
+          FILES="signals.json source_cache.json feed_status.json page_watch.json"
           git config user.name  "github-actions[bot]"
           git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
-          cp data/signals.json "$RUNNER_TEMP/signals.json"
-          [ -f data/source_cache.json ] && cp data/source_cache.json "$RUNNER_TEMP/source_cache.json"   # article cache written by enrich_signals.py
-
+          for f in $FILES; do [ -f "data/$f" ] && cp "data/$f" "$RUNNER_TEMP/$f"; done
           for attempt in 1 2 3; do
             git fetch origin "$BRANCH" || { echo "::error::Could not fetch branch '$BRANCH'."; exit 1; }
             git reset --hard "origin/$BRANCH"          # take the latest repo state (no merge conflicts)
             mkdir -p data
-            cp "$RUNNER_TEMP/signals.json" data/signals.json
-            git add data/signals.json
-            if [ -f "$RUNNER_TEMP/source_cache.json" ]; then
-              cp "$RUNNER_TEMP/source_cache.json" data/source_cache.json
-              git add data/source_cache.json
-            fi
+            for f in $FILES; do
+              if [ -f "$RUNNER_TEMP/$f" ]; then cp "$RUNNER_TEMP/$f" "data/$f"; git add "data/$f"; fi
+            done
             if git diff --cached --quiet; then
-              echo "No new items - nothing to commit."
+              echo "No changes - nothing to commit."
               exit 0
             fi
             git commit -q -m "Live feed update $(date -u +'%Y-%m-%d %H:%M UTC')"
