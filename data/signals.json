@@ -1,6 +1,25 @@
 {
- "updated": "2026-11-04T08:58:53+00:00",
+ "updated": "2026-11-04T10:05:11+00:00",
  "signals": [
+  {
+   "id": "live-282d038286",
+   "date": "2026-11-04",
+   "title": "Poland launches 2026 renewables auction",
+   "summary": "The auctions for solar PV and onshore wind projects will take place on November 9–10, divided into two capacity categories: installations up to 1 MW and those above 1 MW. The post Poland launches 2026 renewables auction appeared first on pv magazine Global .",
+   "links": [
+    {
+     "label": "pv magazine — article",
+     "url": "https://www.pv-magazine.com/2026/11/04/poland-launches-2026-renewables-auction/",
+     "type": "press"
+    }
+   ],
+   "cos": [
+    "ALL"
+   ],
+   "publisher": "pv magazine",
+   "lang": "en",
+   "region": "National"
+  },
   {
    "id": "live-ef9c59194a",
    "date": "2026-11-03",
