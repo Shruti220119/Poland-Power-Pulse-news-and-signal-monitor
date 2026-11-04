@@ -1,5 +1,15 @@
-"""Poland Power Pulse - live feed fetcher v7 (stdlib only, no pip installs).
-Built on your v5 file; changes for dashboard v94 are marked  # v7.
+"""Poland Power Pulse - live feed fetcher v8 (stdlib only, no pip installs).
+Built on v7; changes are marked  # v8.
+v8 (4 Nov 2026):
+  - Every news-publishing source in the dashboard's Sources panel is now in the registry (45 sources
+    were missing), so each one is checked on every 30-minute run.
+  - C. Page watch: the news / current-report pages of key official sources (utilities, URE, PSE,
+    PEJ, ministries) are read directly every run and new links are picked up, because Google News
+    does not index all official sites.
+  - Atom feeds are read as well as RSS.
+  - data/feed_status.json is written on every run: run time, and for every feed, query and page
+    whether it was checked, whether it worked and how many items it gave. This is the proof that
+    all sources were checked in that run.
 
 Monitors ALL dashboard sources every run (the GitHub workflow runs it every 30 minutes):
   A. 15 direct RSS feeds (publishers that offer an RSS feed)
@@ -24,7 +34,11 @@ from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode, quote
 
 OUT = Path(__file__).resolve().parent.parent / "data" / "signals.json"
-UA = {"User-Agent": "Mozilla/5.0 (PolandPowerPulse feed bot)"}
+UA = {"User-Agent": "Mozilla/5.0 (compatible; PolandPowerPulse/8.0; +https://github.com/)",   # v8
+      "Accept": "application/rss+xml, application/atom+xml, application/xml, text/xml, text/html;q=0.9, */*;q=0.8",
+      "Accept-Language": "pl,en;q=0.8"}
+STATUS = OUT.parent / "feed_status.json"        # v8: per-run proof of what was checked
+WATCH = OUT.parent / "page_watch.json"          # v8: links already seen on watched pages
 
 # v7: fields owned by enrich_signals.py. The fetcher rebuilds every item from the RSS each run,
 # so without this list the enrichment was thrown away and had to be redone on every run.
@@ -146,7 +160,92 @@ SOURCES = [
     ("WysokieNapiecie.pl", "wysokienapiecie.pl", "specialist", "pl", "rss"),
     ("CIRE", "cire.pl", "specialist", "pl", "rss"),
     ("Energetyka24", "energetyka24.com", "specialist", "pl", "rss"),
+    # v8: sources listed in the dashboard's Sources panel that were not monitored before
+    ("PGE Dystrybucja", "pgedystrybucja.pl", "official", "pl", "pl-official3"),
+    ("TAURON Dystrybucja", "tauron-dystrybucja.pl", "official", "pl", "pl-official3"),
+    ("ZE PAK", "zepak.com.pl", "official", "pl", "pl-official3"),
+    ("GAZ-SYSTEM", "gaz-system.pl", "official", "pl", "pl-official3"),
+    ("Polimex Mostostal", "polimex-mostostal.pl", "official", "pl", "pl-official3"),
+    ("Budimex", "budimex.pl", "official", "pl", "pl-official3"),
+    ("LG Energy Solution Wrocław", "lgensol.pl", "official", "pl", "pl-official3"),
+    ("Synthos", "synthosgroup.com", "official", "pl", "pl-official3"),
+    ("TGE", "tge.pl", "official", "pl", "pl-gov2"),
+    ("GPW (ESPI/EBI)", "gpw.pl", "official", "pl", "pl-gov2"),
+    ("UOKiK", "uokik.gov.pl", "official", "pl", "pl-gov2"),
+    ("RCL (Government Legislation Centre)", "legislacja.gov.pl", "official", "pl", "pl-gov2"),
+    ("NIK", "nik.gov.pl", "official", "pl", "pl-gov2"),
+    ("Urząd Morski w Gdyni", "umgdy.gov.pl", "official", "pl", "pl-gov2"),
+    ("Zarządca Rozliczeń", "zrsa.pl", "official", "pl", "pl-gov2"),
+    ("ARE", "are.waw.pl", "official", "pl", "pl-gov2"),
+    ("PAA", "gov.pl/web/paa", "official", "pl", "pl-gov3"),
+    ("GDOŚ", "gov.pl/web/gdos", "official", "pl", "pl-gov3"),
+    ("NFOŚiGW", "gov.pl/web/nfosigw", "official", "pl", "pl-gov3"),
+    ("RES contact point", "gov.pl/web/kontaktoze", "official", "pl", "pl-gov3"),
+    ("RDOŚ", "gov.pl/web/rdos-gdansk", "official", "pl", "pl-gov3"),
+    ("Sejm", "sejm.gov.pl", "official", "pl", "pl-gov3"),
+    ("PSEW", "psew.pl", "specialist", "pl", "pl-assoc"),
+    ("PIGEOR", "pigeor.pl", "specialist", "pl", "pl-assoc"),
+    ("PSF (Polish PV Association)", "stowarzyszeniepv.pl", "specialist", "pl", "pl-assoc"),
+    ("IGCP", "igcp.org.pl", "specialist", "pl", "pl-assoc"),
+    ("Instrat", "instrat.pl", "specialist", "pl", "pl-assoc"),
+    ("WiseEuropa", "wise-europa.eu", "specialist", "pl", "pl-assoc"),
+    ("Instytut Reform", "ireform.eu", "specialist", "pl", "pl-assoc"),
+    ("Globenergia.pl", "globenergia.pl", "specialist", "pl", "pl-press3"),
+    ("Teraz Środowisko", "teraz-srodowisko.pl", "specialist", "pl", "pl-press3"),
+    ("BiznesAlert.pl", "biznesalert.pl", "specialist", "pl", "pl-press3"),
+    ("ISBnews", "isbnews.pl", "specialist", "pl", "pl-press3"),
+    ("Biznes24 (ISBnews)", "biznes24.pl", "specialist", "pl", "pl-press3"),
+    ("Stockwatch.pl", "stockwatch.pl", "specialist", "pl", "pl-press3"),
+    ("Rzeczpospolita", "rp.pl", "general", "pl", "pl-press3"),
+    ("Iberdrola", "iberdrola.com", "official", "en", "int-official4"),
+    ("Greenvolt", "greenvolt.com", "official", "en", "int-official4"),
+    ("Qair", "qair.energy", "official", "en", "int-official4"),
+    ("Statkraft", "statkraft.com", "official", "en", "int-official4"),
+    ("R.Power", "r.power", "official", "en", "int-official4"),
+    ("Lightsource bp", "lightsourcebp.com", "official", "en", "int-official4"),
+    ("EDPR investors", "edpr-investors.com", "official", "en", "int-official4"),
+    ("PPC", "ppcgroup.com", "official", "en", "int-official4"),
+    ("Tavion", "tavion.se", "official", "en", "int-official4"),
+    ("European Commission (commission.europa.eu)", "commission.europa.eu", "official", "en", "int-official4"),
+    ("reNEWS", "renews.biz", "specialist", "en", "int-press3"),
+    ("PV Tech", "pv-tech.org", "specialist", "en", "int-press3"),
+    ("Nuclear Engineering International", "neimagazine.com", "specialist", "en", "int-press3"),
+    ("Enerdata", "enerdata.net", "specialist", "en", "int-press3"),
+    ("Utility Dive", "utilitydive.com", "specialist", "en", "int-press3"),
+    ("SeeNews", "seenews.com", "specialist", "en", "int-press3"),
 ]
+
+# v8: listed in the Sources panel but not machine-readable as news (no feed, not in Google News, or the
+# domain is not known). Reported in feed_status.json so the gap is visible, not hidden.
+NOT_MONITORED = [
+    ("TED — EU tenders", "Procurement database - needs the TED Search API, not a news feed"),
+    ("e-Zamówienia / BZP", "Procurement database - needs its own API, not a news feed"),
+    ("Sejm API & ELI", "Legislative database - covered only through news about it (Sejm site query)"),
+    ("OSGE (ORLEN Synthos Green Energy)", "Website domain not confirmed - add it to SOURCES once known"),
+    ("Enefit", "Website domain not confirmed - add it to SOURCES once known"),
+    ("Better Energy", "Website domain not confirmed - add it to SOURCES once known"),
+]
+
+# v8: C. PAGE WATCH - official news / current-report pages read directly every run (new links are picked up)
+PAGES = [
+    ("PGE", "https://www.gkpge.pl/en/for-investors/current-reports"),
+    ("Enea", "https://ir.enea.pl/en"),
+    ("Energa", "https://media.energa.pl/"),
+    ("ORLEN", "https://www.orlen.pl/en/about-the-company/media/press-releases"),
+    ("TAURON", "https://media.tauron.pl/komunikaty-prasowe"),
+    ("PEJ", "https://pej.pl/en/press-center/news/"),
+    ("Polenergia", "https://www.polenergia.pl/en/news-2/"),
+    ("Polenergia", "https://www.polenergia.pl/aktualnosci/"),
+    ("URE", "https://www.ure.gov.pl/en/communication/news"),
+    ("PSE", "https://www.pse.pl/aktualnosci-rynku-mocy"),
+    ("Ministry of Energy", "https://www.gov.pl/web/energia"),
+    ("Ministry of Climate and Environment", "https://www.gov.pl/web/climate"),
+    ("Baltic Power", "https://balticpower.pl/en/"),
+    ("ZE PAK", "https://ri.zepak.com.pl/en/"),
+    ("Energa Storage", "https://energastorage.pl/"),
+]
+NAV = re.compile(r"cookie|privacy|prywatno|polityka|regulamin|kontakt|contact|login|zaloguj|newsletter|kariera|career|"
+                 r"sitemap|mapa strony|\brss\b|facebook|linkedin|twitter|youtube|instagram|deklaracja dost|accessibility", re.I)
 PAID = {"Renewables Now", "PAP Biznes", "inspiratia", "Reuters", "MarketScreener", "Riviera", "NucNet"}
 
 # ── B. GOOGLE NEWS GROUPS (one batched query per group, last 7 days) ────────
@@ -155,7 +254,10 @@ KW_POLAND = "(Poland OR Polish OR Polska)"
 KW_EN = "(Poland OR Polish) (energy OR power OR wind OR solar OR battery OR storage OR nuclear OR gas OR coal OR grid OR heat)"
 GROUP_KW = {"pl-official": "", "pl-official2": "", "pl-gov": KW_PL, "int-official": KW_POLAND,
             "int-official2": KW_POLAND, "int-official3": KW_POLAND, "pl-press": KW_PL, "pl-press2": KW_PL,
-            "int-press": KW_EN, "int-press2": KW_EN, "int-law": KW_EN}
+            "int-press": KW_EN, "int-press2": KW_EN, "int-law": KW_EN,
+            # v8 groups
+            "pl-official3": KW_PL, "pl-gov2": KW_PL, "pl-gov3": KW_PL, "pl-assoc": "", "pl-press3": KW_PL,
+            "int-official4": KW_POLAND, "int-press3": KW_EN}
 
 def gnews_url(sites, kw, lang):
     q = "(" + " OR ".join("site:" + s for s in sites) + ")" + (" " + kw if kw else "") + " when:7d"
@@ -416,22 +518,40 @@ def change_line(title, summary):
     return first if first and first.endswith((".", "!", "?")) and 6 <= len(first.split()) <= 35 else title
 
 def parse_date(s):
+    s = (s or "").strip()
     try:
         return parsedate_to_datetime(s).astimezone(timezone.utc).strftime("%Y-%m-%d")
     except Exception:
-        return s[:10] if re.match(r"\d{4}-\d{2}-\d{2}", s or "") else None
+        return s[:10] if re.match(r"\d{4}-\d{2}-\d{2}", s) else None      # also ISO dates from Atom feeds
 
 # ── FETCH ───────────────────────────────────────────────────────────────────
+ATOM = "{http://www.w3.org/2005/Atom}"
+
+
+def feed_entries(root):
+    """v8: yields (title, link, description, date-string, element) for RSS <item> and Atom <entry>."""
+    for it in root.iter("item"):
+        yield (it.findtext("title"), it.findtext("link") or "", it.findtext("description"),
+               it.findtext("pubDate") or it.findtext("{http://purl.org/dc/elements/1.1/}date") or "", it)
+    for it in root.iter(ATOM + "entry"):
+        link = ""
+        for l in it.findall(ATOM + "link"):
+            if l.get("rel", "alternate") == "alternate" and l.get("href"):
+                link = l.get("href"); break
+        yield (it.findtext(ATOM + "title"), link, it.findtext(ATOM + "summary") or it.findtext(ATOM + "content"),
+               it.findtext(ATOM + "published") or it.findtext(ATOM + "updated") or "", it)
+
+
 def fetch(name, url, google=False, polish_feed=False):
     req = urllib.request.Request(url, headers=UA)
     with urllib.request.urlopen(req, timeout=25) as r:
         root = ET.fromstring(r.read())
     out, dropped = [], 0
-    for it in root.iter("item"):
-        title = clean(it.findtext("title"))
-        link = clean_link(it.findtext("link") or "")                    # v7: tracking parameters removed
-        desc = clean(it.findtext("description"))
-        date_ = parse_date(it.findtext("pubDate") or "")
+    for title, link, desc, date_raw, it in feed_entries(root):          # v8: RSS and Atom
+        title = clean(title)
+        link = clean_link(link)                                          # v7: tracking parameters removed
+        desc = clean(desc)
+        date_ = parse_date(date_raw)
         publisher, source_url, tier, lang = name, "", None, "pl" if polish_feed else "en"
         if google:
             src = it.find("source")
@@ -509,29 +629,129 @@ def headline_companies(s):
     h = f'{s.get("title", "")} {s.get("title_pl", "")}'
     return [k for k, rx in COS.items() if re.search(rx, h, re.I)]
 
+# ── C. PAGE WATCH (v8) ──────────────────────────────────────────────────────
+A_TAG = re.compile(r"<a\b[^>]*?href\s*=\s*[\"']([^\"'#]+)[\"'][^>]*>(.*?)</a>", re.I | re.S)
+
+
+def page_links(url):
+    """All article-like links on a news / current-report page: (absolute url, link text)."""
+    from urllib.parse import urljoin
+    req = urllib.request.Request(url, headers=UA)
+    with urllib.request.urlopen(req, timeout=25) as r:
+        raw = r.read()
+        charset = r.headers.get_content_charset() or "utf-8"
+    page = raw.decode(charset, errors="replace")
+    base_host = host(url)
+    out, seen = [], set()
+    for href, inner in A_TAG.findall(page):
+        text = clean(inner)
+        full = clean_link(urljoin(url, html.unescape(href.strip())))
+        if not full.startswith("http") or full in seen:
+            continue
+        h = host(full)
+        if not (h == base_host or h.endswith("." + base_host) or base_host.endswith("." + h)):
+            continue                                               # links to other sites are ignored
+        path = urlsplit(full).path.rstrip("/")
+        if len([x for x in path.split("/") if x]) < 2:            # home / section pages are not articles
+            continue
+        if not (25 <= len(text) <= 300) or NAV.search(text) or NAV.search(path):
+            continue
+        seen.add(full)
+        out.append((full, text))
+    return out
+
+
+def watch_pages(watch_state):
+    """Reads every page in PAGES. The first time a page is seen its links are only remembered (no flood of
+    old items); afterwards any NEW link with an in-scope headline becomes a live item dated the day it was found."""
+    items, report = [], []
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    for name, url in PAGES:
+        entry = {"source": name, "url": url, "checked": True}
+        try:
+            links = page_links(url)
+            st = watch_state.get(url)
+            seen = set(st["seen"]) if st else set()
+            first = st is None
+            new = [(u, t) for u, t in links if u not in seen]
+            kept = 0
+            if not first:
+                for u, t in new:
+                    if not in_scope(t):
+                        continue
+                    reg = lookup(u)
+                    publisher, tier, lang = (reg[0], reg[2], reg[3]) if reg else (name, "official", "pl")
+                    if "/en/" in u or "/en-" in u or (not re.search(r"[ąćęłńóśźż]", t, re.I)
+                                                      and re.search(r"\b(the|and|for|with|of)\b", t, re.I)):
+                        lang = "en"                                # English page on a Polish site
+                    item = {"id": "live-" + hashlib.md5(canon(u).encode()).hexdigest()[:10],
+                            "date": today, "title": t, "summary": "",
+                            "links": [{"label": f"{publisher} — article", "url": u, "type": "official"}],
+                            "source_url": url, "tier": tier,
+                            "cos": [k for k, rx in COS.items() if re.search(rx, t, re.I)] or ["ALL"],
+                            "publisher": publisher, "lang": lang, "region": "National",
+                            "detected": "page-watch"}
+                    items.append(item); kept += 1
+            watch_state[url] = {"seen": ([u for u, _ in links] + [x for x in (st["seen"] if st else []) if x not in {u for u, _ in links}])[:800],
+                                "checked": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+            entry.update(status="ok", links_on_page=len(links), new_links=0 if first else len(new), items=kept,
+                         note="first visit - links remembered, items start next run" if first else
+                              ("page returned no article links (it may need JavaScript)" if not links else ""))
+            print(f"OK   Page · {name}: {len(links)} links, {0 if first else len(new)} new, {kept} in scope" + (" (first visit)" if first else ""))
+        except Exception as e:
+            entry.update(status="error", error=str(e)[:200], items=0)
+            print(f"SKIP Page · {name}: {e}")
+        report.append(entry)
+        time.sleep(1)
+    return items, report
+
+
 def main():
+    run_start = datetime.now(timezone.utc)
     old = {}
     if OUT.exists():
         try:
             old = {s["id"]: s for s in json.loads(OUT.read_text(encoding="utf-8")).get("signals", [])}
         except Exception:
             old = {}
+    try:
+        watch_state = json.loads(WATCH.read_text(encoding="utf-8")) if WATCH.exists() else {}
+    except Exception:
+        watch_state = {}
     store, found = dict(old), {}
+    status = {"rss": [], "google_news": [], "page_watch": []}                     # v8
     print("Translation:", "Azure AI Translator" if TR_KEY else "OFF (no AZURE_TRANSLATOR_KEY) - Polish items hidden on dashboard")
-    jobs = [(n, u, False, n in POLISH_FEEDS) for n, u in FEEDS.items()] + \
-           [(f"Google News · {g}", u, True, False) for g, u in build_groups().items()]
-    for name, url, google, pl in jobs:
+    groups = build_groups()
+    group_sites = {}
+    for n, site, tier, lang, g in SOURCES:
+        group_sites.setdefault(g, []).append(n)
+    jobs = [(n, u, False, n in POLISH_FEEDS, n) for n, u in FEEDS.items()] + \
+           [(f"Google News · {g}", u, True, False, g) for g, u in groups.items()]
+
+    def take(items):
+        for s in items:
+            s = add_translation(s, old)
+            store[s["id"]] = keep_enrichment(s, old)             # v7: enrichment survives the refresh
+            found[s["publisher"]] = found.get(s["publisher"], 0) + 1
+
+    for name, url, google, pl, key in jobs:
+        rec = {"source": key, "checked": True}
+        if google:
+            rec["sites"] = group_sites.get(key, [])
         try:
             items, dropped = fetch(name, url, google, pl)
-            for s in items:
-                s = add_translation(s, old)
-                store[s["id"]] = keep_enrichment(s, old)             # v7: enrichment survives the refresh
-                found[s["publisher"]] = found.get(s["publisher"], 0) + 1
+            take(items)
+            rec.update(status="ok", items=len(items), out_of_scope=dropped)
             print(f"OK   {name}: {len(items)} items ({dropped} out of scope)")
         except Exception as e:
+            rec.update(status="error", error=str(e)[:200], items=0)
             print(f"SKIP {name}: {e}")
+        status["google_news" if google else "rss"].append(rec)
         if google:
             time.sleep(2)                                  # be polite to Google News
+    page_items, status["page_watch"] = watch_pages(watch_state)                  # v8: C. page watch
+    take(page_items)
+
     kept = [s for s in store.values() if in_scope(s.get("title_pl") or s.get("title", ""))]
     for s in kept:
         s["summary"] = tidy(s.get("summary", "")) if s.get("summary") else ""
@@ -549,13 +769,36 @@ def main():
         print(f"  {'✓' if n in found else '·'} {n}: {found.get(n, 0)}")
     sigs = sorted(kept, key=lambda s: (s["date"], s["id"]), reverse=True)[:600]
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    payload = json.dumps({"updated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                          "sources_monitored": len(names), "signals": sigs}, ensure_ascii=False, indent=1)
-    tmp = OUT.with_suffix(".json.tmp")                         # v7: write-then-rename, so a crash never leaves a half-written file
-    tmp.write_text(payload, encoding="utf-8")
-    tmp.replace(OUT)
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+    def write(path, obj):                                   # v7: write-then-rename, never a half-written file
+        tmp = path.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(obj, ensure_ascii=False, indent=1), encoding="utf-8")
+        tmp.replace(path)
+
+    write(OUT, {"updated": now, "sources_monitored": len(names), "signals": sigs})
+    write(WATCH, watch_state)
+    # v8: proof of coverage for this run
+    checks = status["rss"] + status["google_news"] + status["page_watch"]
+    new_ids = [s["id"] for s in sigs if s["id"] not in old]
+    hidden_pl = sum(1 for s in sigs if s.get("lang") == "pl" and not s.get("translated"))
+    write(STATUS, {
+        "run_started_utc": run_start.isoformat(timespec="seconds"), "run_finished_utc": now,
+        "translation": "on" if TR_KEY else "OFF - Polish items are not shown on the dashboard",
+        "registry_sources": len(names),
+        "registry_sources_checked": len(names),                 # every registry source sits in an RSS feed or a Google News query
+        "sources_with_items_this_run": len(found),
+        "checks_total": len(checks), "checks_ok": sum(1 for c in checks if c.get("status") == "ok"),
+        "checks_failed": [c["source"] for c in checks if c.get("status") != "ok"],
+        "new_items_this_run": len(new_ids), "new_item_ids": new_ids[:50],
+        "items_in_feed": len(sigs), "polish_items_waiting_for_translation": hidden_pl,
+        "rss": status["rss"], "google_news": status["google_news"], "page_watch": status["page_watch"],
+        "not_monitored": [{"source": n, "reason": r} for n, r in NOT_MONITORED],
+    })
     enriched = sum(1 for s in sigs if s.get("change_src"))
     print(f"Wrote {len(sigs)} live items to {OUT} ({enriched} already enriched from the source article)")
+    print(f"Checks: {sum(1 for c in checks if c.get('status') == 'ok')}/{len(checks)} OK · {len(new_ids)} new items this run · status in {STATUS}")
+
 
 if __name__ == "__main__":
     main()
