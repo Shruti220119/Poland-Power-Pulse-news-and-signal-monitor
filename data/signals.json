@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-04T14:57:42+00:00",
+ "updated": "2026-11-04T15:57:39+00:00",
  "signals": [
   {
    "id": "live-282d038286",
@@ -17,6 +17,25 @@
     "ALL"
    ],
    "publisher": "pv magazine",
+   "lang": "en",
+   "region": "National"
+  },
+  {
+   "id": "live-3e284f700d",
+   "date": "2026-11-04",
+   "title": "“Democracy won in America”: Polish leaders react to US midterm election results",
+   "summary": "The defeat of Donald Trump's Republicans received a positive reaction from Poland's ruling coalition.",
+   "links": [
+    {
+     "label": "Notes From Poland — article",
+     "url": "https://notesfrompoland.com/2026/11/04/democracy-won-in-america-polish-leaders-react-to-us-midterm-election-results/",
+     "type": "press"
+    }
+   ],
+   "cos": [
+    "ALL"
+   ],
+   "publisher": "Notes From Poland",
    "lang": "en",
    "region": "National"
   },
