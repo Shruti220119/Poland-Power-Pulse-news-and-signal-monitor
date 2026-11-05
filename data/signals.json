@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-05T14:59:58+00:00",
+ "updated": "2026-11-05T16:02:33+00:00",
  "signals": [
   {
    "id": "live-ddb4847224",
@@ -17,6 +17,25 @@
     "ALL"
    ],
    "publisher": "Baltic Wind",
+   "lang": "en",
+   "region": "National"
+  },
+  {
+   "id": "live-e6972d55ad",
+   "date": "2026-11-05",
+   "title": "IHI to supply components for first Polish AP1000",
+   "summary": "Japanese engineering firm IHI Corporation has received an order from Westinghouse covering engineering and procurement activities for long-lead items for one containment vessel and an associated large steel module for the first unit of Poland's first nuclear power plant.",
+   "links": [
+    {
+     "label": "World Nuclear News — article",
+     "url": "https://www.world-nuclear-news.org/articles/ihi-to-supply-components-for-first-polish-ap1000",
+     "type": "press"
+    }
+   ],
+   "cos": [
+    "ALL"
+   ],
+   "publisher": "World Nuclear News",
    "lang": "en",
    "region": "National"
   },
