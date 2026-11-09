@@ -1,6 +1,25 @@
 {
- "updated": "2026-11-09T19:36:43+00:00",
+ "updated": "2026-11-09T20:32:11+00:00",
  "signals": [
+  {
+   "id": "live-5f7c7e54a5",
+   "date": "2026-11-09",
+   "title": "Coalition of the Willing military exercises begin in Poland to prepare support for postwar Ukraine",
+   "summary": "France and the UK are jointly leading the exercises, which also involve nine other countries.",
+   "links": [
+    {
+     "label": "Notes From Poland — article",
+     "url": "https://notesfrompoland.com/2026/11/09/coalition-of-the-willing-military-exercises-begin-in-poland-to-prepare-support-for-postwar-ukraine/",
+     "type": "press"
+    }
+   ],
+   "cos": [
+    "ALL"
+   ],
+   "publisher": "Notes From Poland",
+   "lang": "en",
+   "region": "National"
+  },
   {
    "id": "live-ddb4847224",
    "date": "2026-11-05",
