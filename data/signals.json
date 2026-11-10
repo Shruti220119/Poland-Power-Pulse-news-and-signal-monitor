@@ -1,6 +1,25 @@
 {
- "updated": "2026-11-10T11:27:28+00:00",
+ "updated": "2026-11-10T12:29:13+00:00",
  "signals": [
+  {
+   "id": "live-7ba5b4c7dc",
+   "date": "2026-11-10",
+   "title": "Battery trader The Mobility House restructures around V2G and Eastern European storage markets",
+   "summary": "Co-founder Marcus Fendt will depart after 16 years as the Munich-based storage optimizer restructures around bidirectional EV charging and cross-border expansion into Poland and Romania. The post Battery trader The Mobility House restructures around V2G and Eastern European storage markets appeared first on Energy Storage .",
+   "links": [
+    {
+     "label": "ESS News — article",
+     "url": "https://www.ess-news.com/2026/11/10/battery-trader-the-mobility-house-restructures-around-v2g-and-eastern-european-storage-markets/",
+     "type": "press"
+    }
+   ],
+   "cos": [
+    "ALL"
+   ],
+   "publisher": "ESS News",
+   "lang": "en",
+   "region": "National"
+  },
   {
    "id": "live-5f7c7e54a5",
    "date": "2026-11-09",
