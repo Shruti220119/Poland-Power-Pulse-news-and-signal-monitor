@@ -1,6 +1,25 @@
 {
- "updated": "2026-11-11T09:32:01+00:00",
+ "updated": "2026-11-11T17:26:16+00:00",
  "signals": [
+  {
+   "id": "live-dbf5fdd11e",
+   "date": "2026-11-11",
+   "title": "Paris leads EU capitals for rooftop solar generation potential",
+   "summary": "Research from Greece on rooftop PV potential across the EU's 27 capital cities identifies Paris, Budapest and Warsaw as having the highest annual generation potential, while highlighting cloud cover as the largest source of solar energy losses. The post Paris leads EU capitals for rooftop solar generation potential appeared first on pv magazine Global .",
+   "links": [
+    {
+     "label": "pv magazine — article",
+     "url": "https://www.pv-magazine.com/2026/11/11/paris-leads-eu-capitals-for-rooftop-solar-generation-potential/",
+     "type": "press"
+    }
+   ],
+   "cos": [
+    "ALL"
+   ],
+   "publisher": "pv magazine",
+   "lang": "en",
+   "region": "National"
+  },
   {
    "id": "live-7ba5b4c7dc",
    "date": "2026-11-10",
