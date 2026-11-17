@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-17T11:43:20+00:00",
+ "updated": "2026-11-17T20:49:11+00:00",
  "signals": [
   {
    "id": "live-17771ff6f6",
@@ -17,6 +17,25 @@
     "ALL"
    ],
    "publisher": "Baltic Wind",
+   "lang": "en",
+   "region": "National"
+  },
+  {
+   "id": "live-781041fead",
+   "date": "2026-11-17",
+   "title": "Poland awards 1.81 GW of solar in latest renewables auctions",
+   "summary": "Winning solar bids ranged from PLN 180 ($49)/MWh to PLN 377.77/MWh, depending on project size. The post Poland awards 1.81 GW of solar in latest renewables auctions appeared first on pv magazine Global .",
+   "links": [
+    {
+     "label": "pv magazine — article",
+     "url": "https://www.pv-magazine.com/2026/11/17/poland-awards-1-81-gw-of-solar-in-latest-renewables-auctions/",
+     "type": "press"
+    }
+   ],
+   "cos": [
+    "ALL"
+   ],
+   "publisher": "pv magazine",
    "lang": "en",
    "region": "National"
   },
