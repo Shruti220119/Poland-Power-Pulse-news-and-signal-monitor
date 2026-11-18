@@ -1,6 +1,25 @@
 {
- "updated": "2026-11-18T02:51:30+00:00",
+ "updated": "2026-11-18T11:31:41+00:00",
  "signals": [
+  {
+   "id": "live-22663b3217",
+   "date": "2026-11-18",
+   "title": "Poland pushes for cybersecurity requirements for renewables grid connections",
+   "summary": "The proposed measures include stricter protection of operational technology, secure remote access, incident reporting and compliance audits. The recommendations follow a December 2025 cyberattack on Polish renewable energy facilities and could allow grid operators to refuse connections or terminate contracts in cases of serious non-compliance. The post Poland pushes for cybersecurity requirements for renewables grid connections appeared first on pv magazine Global .",
+   "links": [
+    {
+     "label": "pv magazine — article",
+     "url": "https://www.pv-magazine.com/2026/11/18/poland-pushes-for-cybersecurity-requirements-for-renewables-grid-connections/",
+     "type": "press"
+    }
+   ],
+   "cos": [
+    "ALL"
+   ],
+   "publisher": "pv magazine",
+   "lang": "en",
+   "region": "National"
+  },
   {
    "id": "live-17771ff6f6",
    "date": "2026-11-17",
