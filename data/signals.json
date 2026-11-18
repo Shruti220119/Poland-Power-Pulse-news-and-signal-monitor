@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-17T20:49:11+00:00",
+ "updated": "2026-11-18T02:51:30+00:00",
  "signals": [
   {
    "id": "live-17771ff6f6",
@@ -36,6 +36,25 @@
     "ALL"
    ],
    "publisher": "pv magazine",
+   "lang": "en",
+   "region": "National"
+  },
+  {
+   "id": "live-1bba076c12",
+   "date": "2026-11-17",
+   "title": "Polish government seeks to introduce maximum gas prices for consumers",
+   "summary": "The measure would be funded by a new special levy on certain energy companies.",
+   "links": [
+    {
+     "label": "Notes From Poland — article",
+     "url": "https://notesfrompoland.com/2026/11/17/polish-government-seeks-to-introduce-maximum-gas-prices-for-consumers/",
+     "type": "press"
+    }
+   ],
+   "cos": [
+    "ALL"
+   ],
+   "publisher": "Notes From Poland",
    "lang": "en",
    "region": "National"
   },
