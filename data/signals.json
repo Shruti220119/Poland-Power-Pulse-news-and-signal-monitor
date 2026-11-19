@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-19T09:28:45+00:00",
+ "updated": "2026-11-19T18:38:36+00:00",
  "signals": [
   {
    "id": "live-3b97623186",
@@ -37,6 +37,63 @@
     "ALL"
    ],
    "publisher": "Baltic Wind",
+   "lang": "en",
+   "region": "National"
+  },
+  {
+   "id": "live-a491a33b70",
+   "date": "2026-11-19",
+   "title": "Poland deepens regional gas cooperation with Hungary, Czech Republic, Slovakia and Lithuania",
+   "summary": "Poland has sought to position itself as a regional gas hub.",
+   "links": [
+    {
+     "label": "Notes From Poland — article",
+     "url": "https://notesfrompoland.com/2026/11/19/poland-deepens-regional-gas-cooperation-hungary-czech-republic-slovakia-and-lithuania/",
+     "type": "press"
+    }
+   ],
+   "cos": [
+    "ALL"
+   ],
+   "publisher": "Notes From Poland",
+   "lang": "en",
+   "region": "National"
+  },
+  {
+   "id": "live-faccb6ae4d",
+   "date": "2026-11-19",
+   "title": "EU Energy Commissioner Dan Jørgensen to visit Gdańsk’s T5 terminal and Baltic Power offshore wind farm",
+   "summary": "According to BalticWind.EU sources, Commissioner Dan Jørgensen will meet PGE at Gdańsk's T5 installation terminal on Friday and then fly out to view the Baltic Power offshore wind farm. The post EU Energy Commissioner Dan Jørgensen to visit Gdańsk’s T5 terminal and Baltic Power offshore wind farm appeared first on Baltic Wind .",
+   "links": [
+    {
+     "label": "Baltic Wind — article",
+     "url": "https://balticwind.eu/eu-energy-commissioner-dan-jorgensen-to-visit-gdansks-t5-terminal-and-baltic-power-offshore-wind-farm/",
+     "type": "press"
+    }
+   ],
+   "cos": [
+    "PGE"
+   ],
+   "publisher": "Baltic Wind",
+   "lang": "en",
+   "region": "National"
+  },
+  {
+   "id": "live-eef8c2ed03",
+   "date": "2026-11-19",
+   "title": "Bulgaria's NEK signs MoU for potential BWRX-300 projects",
+   "summary": "State-owned electricity company Natsionalna Elektricheska Kompania has signed a memorandum of understanding with Poland's SGE and Blue Bird Energy to cooperate on the deployment of BWRX-300 small modular reactors in Bulgaria.",
+   "links": [
+    {
+     "label": "World Nuclear News — article",
+     "url": "https://www.world-nuclear-news.org/articles/bulgarias-nek-signs-mou-for-potential-bwrx-300-projects",
+     "type": "press"
+    }
+   ],
+   "cos": [
+    "ALL"
+   ],
+   "publisher": "World Nuclear News",
    "lang": "en",
    "region": "National"
   },
