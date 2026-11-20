@@ -1,6 +1,44 @@
 {
- "updated": "2026-11-20T09:09:18+00:00",
+ "updated": "2026-11-20T17:59:29+00:00",
  "signals": [
+  {
+   "id": "live-b7d87a5201",
+   "date": "2026-11-20",
+   "title": "Poland caps how fast batteries can ramp in its secondary reserve market",
+   "summary": "Batteries providing automatic frequency restoration reserve in Poland must take at least 2.5 minutes to reach full output from Dec. 1, after grid operator PSE rejected storage industry objections, though looser control-system rules will ease entry for smaller providers. The post Poland caps how fast batteries can ramp in its secondary reserve market appeared first on Energy Storage .",
+   "links": [
+    {
+     "label": "ESS News — article",
+     "url": "https://www.ess-news.com/2026/11/20/poland-caps-how-fast-batteries-can-ramp-in-its-secondary-reserve-market/",
+     "type": "press"
+    }
+   ],
+   "cos": [
+    "ALL"
+   ],
+   "publisher": "ESS News",
+   "lang": "en",
+   "region": "National"
+  },
+  {
+   "id": "live-54672c9910",
+   "date": "2026-11-20",
+   "title": "Partners prepare to procure next batch of equipment for Polish plant",
+   "summary": "Polskie Elektrownie Jądrowe has signed a letter of intent with the Westinghouse-Bechtel consortium concerning the extension of the scope of the Engineering Development Agreement to cover activities related to the procurement of long lead items for the initial unit of Poland's planned first nuclear power plant.",
+   "links": [
+    {
+     "label": "World Nuclear News — article",
+     "url": "https://www.world-nuclear-news.org/articles/partners-prepare-to-procure-next-batch-of-equipment-for-polish-plant",
+     "type": "press"
+    }
+   ],
+   "cos": [
+    "PEJ"
+   ],
+   "publisher": "World Nuclear News",
+   "lang": "en",
+   "region": "National"
+  },
   {
    "id": "live-3b97623186",
    "date": "2026-11-19",
