@@ -1,6 +1,25 @@
 {
- "updated": "2026-11-25T04:07:45+00:00",
+ "updated": "2026-11-25T14:55:06+00:00",
  "signals": [
+  {
+   "id": "live-10a962603d",
+   "date": "2026-11-25",
+   "title": "Poland links to Europe’s MARI platform, ending isolated balancing era for BESS",
+   "summary": "Poland's high margins for ancillary revenues in BESS are likely reaching an end point before long. The post Poland links to Europe’s MARI platform, ending isolated balancing era for BESS appeared first on Energy Storage .",
+   "links": [
+    {
+     "label": "ESS News — article",
+     "url": "https://www.ess-news.com/2026/11/25/poland-links-to-europes-mari-platform-ending-isolated-balancing-era-for-bess/",
+     "type": "press"
+    }
+   ],
+   "cos": [
+    "ALL"
+   ],
+   "publisher": "ESS News",
+   "lang": "en",
+   "region": "National"
+  },
   {
    "id": "live-b7d87a5201",
    "date": "2026-11-20",
