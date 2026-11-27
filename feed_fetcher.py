@@ -1,12 +1,11 @@
 """Poland Power Pulse - live feed fetcher v10 (stdlib only, no pip installs).
 Built on v9; changes are marked  # v10.
-v10: the additional sources in config/additional_feed_sources.json (from "Additional Sources - Chatgpt.xlsx"
-     and "additional_sources_claude.xlsx") are checked on every run together with the existing sources:
-       - their RSS feeds are read directly (section A),
-       - their news / listing pages are read directly (section B),
-       - their own Google News searches are run (section D, last 14 days).
-     The same scope, duplicate, priority and translation rules apply to them.
-     feed_status.json gets an "additional_sources" block: one line per source with what was read and found.
+v10: (1) the additional sources in config/additional_feed_sources.json are checked on every run together with
+         the existing sources: RSS feeds read directly (A), news / listing pages read directly (B), and each
+         source's own Google News search run (D, last 14 days). Same scope, duplicate, priority and
+         translation rules. feed_status.json gets an "additional_sources" block (one line per source).
+     (2) OSGE (osge.com), Better Energy (betterenergy.com) and Enefit (enefit.com) are now monitored:
+         their websites are read directly and they are included in the Google News searches.
 
 Every run (the GitHub workflow runs it every 30 minutes) EVERY website in the source registry is read
 DIRECTLY from the website itself:
@@ -92,6 +91,7 @@ SOURCES = [
     ("Energa Storage", "energastorage.pl", "official", "pl", "pl-official2"),
     ("Energa-Operator", "energa-operator.pl", "official", "pl", "pl-official2"),
     ("VSB Energie Odnawialne Polska", "vsb.energy", "official", "pl", "pl-official2"),
+    ("OSGE (ORLEN Synthos Green Energy)", "osge.com", "official", "pl", "pl-official2"),          # v10
     ("URE", "ure.gov.pl", "official", "pl", "pl-gov"),
     ("PSE", "pse.pl", "official", "pl", "pl-gov"),
     ("Ministry of Energy", "gov.pl/web/energia", "official", "pl", "pl-gov"),
@@ -123,6 +123,8 @@ SOURCES = [
     ("EXIM", "exim.gov", "official", "en", "int-official3"),
     ("European Commission", "ec.europa.eu", "official", "en", "int-official3"),
     ("EUR-Lex (Official Journal of the EU)", "eur-lex.europa.eu", "official", "en", "int-official3"),
+    ("Better Energy", "betterenergy.com", "official", "en", "int-official3"),                    # v10
+    ("Enefit", "enefit.com", "official", "en", "int-official3"),                                 # v10
     ("Bankier.pl (ZE PAK ESPI report)", "bankier.pl", "general", "pl", "pl-press"),
     # Polish press / associations
     ("PAP Biznes", "biznes.pap.pl", "specialist", "pl", "pl-press"),
@@ -230,9 +232,6 @@ NOT_MONITORED = [
     ("TED — EU tenders", "Procurement database - needs the TED Search API, not a news page"),
     ("e-Zamówienia / BZP", "Procurement database - needs its own API, not a news page"),
     ("Sejm API & ELI", "Legislative database - the Sejm news pages are read instead"),
-    ("OSGE (ORLEN Synthos Green Energy)", "Website address not confirmed - add it to SOURCES once known"),
-    ("Enefit", "Website address not confirmed - add it to SOURCES once known"),
-    ("Better Energy", "Website address not confirmed - add it to SOURCES once known"),
 ]
 
 # v9: news / press / current-report pages to read for a site. Sites not listed here start from their
@@ -263,6 +262,9 @@ NEWS_PAGES = {
     "tge.pl": ["https://tge.pl/aktualnosci"],
     "gpw.pl": ["https://www.gpw.pl/komunikaty"],
     "sejm.gov.pl": ["https://www.sejm.gov.pl/"],
+    "osge.com": ["https://osge.com/en/"],                                                        # v10
+    "betterenergy.com": ["https://betterenergy.com/"],                                           # v10
+    "enefit.com": ["https://www.enefit.com/en"],                                                 # v10
 }
 NAV = re.compile(r"cookie|privacy|prywatno|polityka|regulamin|kontakt|contact|login|zaloguj|newsletter|kariera|career|"
                  r"sitemap|mapa strony|\brss\b|facebook|linkedin|twitter|youtube|instagram|deklaracja dost|accessibility", re.I)
@@ -270,12 +272,9 @@ PAID = {"Renewables Now", "PAP Biznes", "inspiratia", "Reuters", "MarketScreener
 
 # ── v10: ADDITIONAL SOURCES (config/additional_feed_sources.json) ───────────
 EXTRA_CFG = Path(__file__).resolve().parent.parent / "config" / "additional_feed_sources.json"
-EXTRA_GN_DAYS = 14                                # v10: Google News searches look back this many days
-EXTRA_GN_WORKERS = 4                              # v10: Google News searches run 4 at a time
-EXTRA = []                                        # v10: live sources from the config file
-EXTRA_REF = []                                    # v10: reference-only sources (listed, not fetched)
-EXTRA_GN = []                                     # v10: (source name, url, lang, accept_any)
-EXTRA_SKIP = {}                                   # v10: live sources with nothing readable → reason
+EXTRA_GN_DAYS = 14                                # Google News searches look back this many days
+EXTRA_GN_WORKERS = 4                              # Google News searches run 4 at a time
+EXTRA, EXTRA_REF, EXTRA_GN, EXTRA_SKIP = [], [], [], {}
 
 def load_extra():
     """v10: adds every live source in the config file to the registry, the feeds and the news pages."""
@@ -300,7 +299,6 @@ def load_extra():
         for i, d in enumerate(doms):
             if d in have_sites:                       # already monitored under its existing name
                 continue
-            # first domain with news pages is read directly; the others only identify the publisher
             g = "extra" if (i == 0 and s.get("pages")) else "extra-id"
             SOURCES.append((name, d, tier, lang, g)); have_sites.add(d)
         if s.get("pages"):
@@ -308,11 +306,9 @@ def load_extra():
                                                  for p in s["pages"])), doms[0] if doms else None)
             if key:
                 NEWS_PAGES[key] = list(dict.fromkeys(NEWS_PAGES.get(key, []) + s["pages"]))
-                if key in have_sites and not any(x[1] == key and x[4] == "extra" for x in SOURCES):
-                    # site was already in the registry under another group: make sure it is read directly
-                    for j, x in enumerate(SOURCES):
-                        if x[1] == key and x[4] in ("extra-id",):
-                            SOURCES[j] = x[:4] + ("extra",)
+                for j, x in enumerate(SOURCES):           # make sure the page is read directly
+                    if x[1] == key and x[4] == "extra-id":
+                        SOURCES[j] = x[:4] + ("extra",)
         for u in s.get("rss", []):
             if host(u) not in feed_hosts:
                 FEEDS[name] = u; feed_hosts.add(host(u))
@@ -826,7 +822,7 @@ def read_site(src, state, now):
     items = []
     try:
         fresh = st.get("discovered") and (now - datetime.fromisoformat(st["discovered"])) < timedelta(hours=REDISCOVER_HOURS)
-        if st.get("cfg_pages") != NEWS_PAGES.get(site, []):     # v10: news pages changed in the config → look again now
+        if st.get("cfg_pages") != NEWS_PAGES.get(site, []):     # v10: news pages changed → look again now
             fresh = False
             st["cfg_pages"] = NEWS_PAGES.get(site, [])
         if not fresh:                                          # ── discovery (once a day) ──
@@ -956,9 +952,9 @@ def extra_report(status, sigs):
     for s in EXTRA:
         doms = set(s.get("domains") or [])
         recs = by_src.get(s["name"], []) + [r for r in status.get("websites", [])
-                                             if r.get("site") in doms and r["source"] != s["name"]]   # read under an existing name
+                                             if r.get("site") in doms and r["source"] != s["name"]]
         rows.append({
-            "source": s["name"], "id": s["id"], "tier": s.get("tier"), "lang": s.get("lang"),
+            "source": s["name"], "id": s.get("id"), "tier": s.get("tier"), "lang": s.get("lang"),
             "checked_this_run": bool(recs),
             "methods": sorted({r.get("method", "") for r in recs}),
             "ok": sum(1 for r in recs if r.get("status") == "ok"), "failed": sum(1 for r in recs if r.get("status") != "ok"),
@@ -1030,9 +1026,8 @@ def main():
             return [], rec
     with ThreadPoolExecutor(max_workers=EXTRA_GN_WORKERS) as ex:
         for items, rec in ex.map(run_gn, EXTRA_GN):
-            new = [x for x in items if x["id"] not in store]
+            rec["new_items"] = len([x for x in items if x["id"] not in store])
             take(items)
-            rec["new_items"] = len(new)
             status["extra_google_news"].append(rec)
             print(("OK   " if rec["status"] == "ok" else "SKIP ") + f"Google News · {rec['source']}: {rec.get('items', 0)} items"
                   + (f" - {rec.get('error')}" if rec.get("error") else ""))
