@@ -1,5 +1,12 @@
-"""Poland Power Pulse - live feed fetcher v9 (stdlib only, no pip installs).
-Built on v7; changes are marked  # v9.
+"""Poland Power Pulse - live feed fetcher v10 (stdlib only, no pip installs).
+Built on v9; changes are marked  # v10.
+v10: the additional sources in config/additional_feed_sources.json (from "Additional Sources - Chatgpt.xlsx"
+     and "additional_sources_claude.xlsx") are checked on every run together with the existing sources:
+       - their RSS feeds are read directly (section A),
+       - their news / listing pages are read directly (section B),
+       - their own Google News searches are run (section D, last 14 days).
+     The same scope, duplicate, priority and translation rules apply to them.
+     feed_status.json gets an "additional_sources" block: one line per source with what was read and found.
 
 Every run (the GitHub workflow runs it every 30 minutes) EVERY website in the source registry is read
 DIRECTLY from the website itself:
@@ -31,7 +38,7 @@ from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode, quote
 
 OUT = Path(__file__).resolve().parent.parent / "data" / "signals.json"
-UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PolandPowerPulse/9.0 (news monitor)",   # v9
+UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) PolandPowerPulse/10.0 (news monitor)",   # v9
       "Accept": "text/html,application/xhtml+xml,application/rss+xml,application/atom+xml,application/xml;q=0.9,*/*;q=0.8",
       "Accept-Language": "pl,en;q=0.8"}
 STATUS = OUT.parent / "feed_status.json"        # v9: per-run proof of what was checked
@@ -261,6 +268,73 @@ NAV = re.compile(r"cookie|privacy|prywatno|polityka|regulamin|kontakt|contact|lo
                  r"sitemap|mapa strony|\brss\b|facebook|linkedin|twitter|youtube|instagram|deklaracja dost|accessibility", re.I)
 PAID = {"Renewables Now", "PAP Biznes", "inspiratia", "Reuters", "MarketScreener", "Riviera", "NucNet"}
 
+# ── v10: ADDITIONAL SOURCES (config/additional_feed_sources.json) ───────────
+EXTRA_CFG = Path(__file__).resolve().parent.parent / "config" / "additional_feed_sources.json"
+EXTRA_GN_DAYS = 14                                # v10: Google News searches look back this many days
+EXTRA_GN_WORKERS = 4                              # v10: Google News searches run 4 at a time
+EXTRA = []                                        # v10: live sources from the config file
+EXTRA_REF = []                                    # v10: reference-only sources (listed, not fetched)
+EXTRA_GN = []                                     # v10: (source name, url, lang, accept_any)
+EXTRA_SKIP = {}                                   # v10: live sources with nothing readable → reason
+
+def load_extra():
+    """v10: adds every live source in the config file to the registry, the feeds and the news pages."""
+    if not EXTRA_CFG.exists():
+        print(f"Additional sources: {EXTRA_CFG} not found - only the built-in sources are checked")
+        return
+    try:
+        cfg = json.loads(EXTRA_CFG.read_text(encoding="utf-8"))
+    except Exception as e:
+        print(f"Additional sources: could not read {EXTRA_CFG.name}: {e}")
+        return
+    have_sites = {site for _, site, *_ in SOURCES}
+    feed_hosts = {host(u) for u in FEEDS.values()}
+    for s in cfg.get("sources", []):
+        if not s.get("live"):
+            EXTRA_REF.append(s); continue
+        EXTRA.append(s)
+        name, tier, lang = s["name"], s.get("tier", "specialist"), s.get("lang", "en")
+        if s.get("paid"):
+            PAID.add(name)
+        doms = s.get("domains") or []
+        for i, d in enumerate(doms):
+            if d in have_sites:                       # already monitored under its existing name
+                continue
+            # first domain with news pages is read directly; the others only identify the publisher
+            g = "extra" if (i == 0 and s.get("pages")) else "extra-id"
+            SOURCES.append((name, d, tier, lang, g)); have_sites.add(d)
+        if s.get("pages"):
+            key = next((d for d in doms if any(host(p) == d.split("/")[0] or host(p).endswith("." + d.split("/")[0])
+                                                 for p in s["pages"])), doms[0] if doms else None)
+            if key:
+                NEWS_PAGES[key] = list(dict.fromkeys(NEWS_PAGES.get(key, []) + s["pages"]))
+                if key in have_sites and not any(x[1] == key and x[4] == "extra" for x in SOURCES):
+                    # site was already in the registry under another group: make sure it is read directly
+                    for j, x in enumerate(SOURCES):
+                        if x[1] == key and x[4] in ("extra-id",):
+                            SOURCES[j] = x[:4] + ("extra",)
+        for u in s.get("rss", []):
+            if host(u) not in feed_hosts:
+                FEEDS[name] = u; feed_hosts.add(host(u))
+                if lang == "pl":
+                    POLISH_FEEDS.add(name)
+        for u in s.get("google_news", []):
+            accept_any = "site%3A" not in u and "site:" not in u   # keyword search → any publisher allowed
+            EXTRA_GN.append((name, u, lang, accept_any, tier))
+        if not (s.get("rss") or s.get("pages") or s.get("google_news")):
+            EXTRA_SKIP[name] = "only an API endpoint in the workbook (needs API integration) - not fetched"
+    print(f"Additional sources: {len(EXTRA)} live ({len(EXTRA_GN)} Google News searches, "
+          f"{sum(len(s.get('pages', [])) for s in EXTRA)} news pages, {sum(len(s.get('rss', [])) for s in EXTRA)} RSS) · "
+          f"{len(EXTRA_REF)} reference-only")
+
+def gn_window(url, days):
+    """v10: adds a 'when:<n>d' limit to a Google News search URL unless it already has one."""
+    if "when%3A" in url or "when:" in url:
+        return url
+    p = urlsplit(url)
+    q = [(k, v + f" when:{days}d") if k == "q" else (k, v) for k, v in parse_qsl(p.query, keep_blank_values=True)]
+    return urlunsplit((p.scheme, p.netloc, p.path, urlencode(q), ""))
+
 # ── B. GOOGLE NEWS GROUPS (one batched query per group, last 7 days) ────────
 KW_PL = '(energia OR energetyka OR elektrownia OR "magazyn energii" OR wiatrowa OR fotowoltaika OR jądrowa OR ciepłownia OR "rynek mocy" OR OZE)'
 KW_POLAND = "(Poland OR Polish OR Polska)"
@@ -279,7 +353,7 @@ def gnews_url(sites, kw, lang):
 def build_groups():
     groups = {}
     for name, site, tier, lang, g in SOURCES:
-        if g in ("rss", "fallback"):
+        if g in ("rss", "fallback") or g.startswith("extra"):          # v10: extra sources have their own searches
             continue
         groups.setdefault(g, {"sites": [], "lang": lang})["sites"].append(site)
     return {g: gnews_url(v["sites"], GROUP_KW.get(g, ""), v["lang"]) for g, v in groups.items()}
@@ -554,7 +628,7 @@ def feed_entries(root):
                it.findtext(ATOM + "published") or it.findtext(ATOM + "updated") or "", it)
 
 
-def fetch(name, url, google=False, polish_feed=False, min_date="2024-01-01"):
+def fetch(name, url, google=False, polish_feed=False, min_date="2024-01-01", accept_any=None):   # v10: accept_any=(lang, tier)
     req = urllib.request.Request(url, headers=UA)
     with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
         root = ET.fromstring(r.read())
@@ -572,6 +646,8 @@ def fetch(name, url, google=False, polish_feed=False, min_date="2024-01-01"):
             if src_name:
                 title = re.sub(r"\s+-\s+" + re.escape(src_name) + r"\s*$", "", title)
             reg = lookup(source_url)
+            if not reg and accept_any:                    # v10: keyword search of an additional source
+                reg = (src_name or host(source_url) or name, "", "general", accept_any[0], "extra")
             if not reg:                                   # result from a site we do not monitor
                 continue
             publisher, _, tier, lang, _ = reg
@@ -750,6 +826,9 @@ def read_site(src, state, now):
     items = []
     try:
         fresh = st.get("discovered") and (now - datetime.fromisoformat(st["discovered"])) < timedelta(hours=REDISCOVER_HOURS)
+        if st.get("cfg_pages") != NEWS_PAGES.get(site, []):     # v10: news pages changed in the config → look again now
+            fresh = False
+            st["cfg_pages"] = NEWS_PAGES.get(site, [])
         if not fresh:                                          # ── discovery (once a day) ──
             starts = NEWS_PAGES.get(site, []) + [home_url(site)]
             feed, pages, errors = None, [], []
@@ -841,7 +920,7 @@ def read_all_sites(state, now):
     sites, seen_sites = [], set()
     for src in SOURCES:
         name, site, tier, lang, g = src
-        if g == "fallback" or site in seen_sites:
+        if g in ("fallback", "extra-id") or site in seen_sites:   # v10
             continue
         if g == "rss" and host("https://" + site) in rss_hosts or name in FEEDS:
             continue                                           # read by its known RSS feed (A)
@@ -865,8 +944,37 @@ def read_all_sites(state, now):
     return items, reports
 
 
+def extra_report(status, sigs):
+    """v10: one line per additional source - what was read this run, whether it worked, items in the feed."""
+    by_src = {}
+    for r in status.get("rss", []) + status.get("websites", []) + status.get("extra_google_news", []):
+        by_src.setdefault(r["source"], []).append(r)
+    in_feed = {}
+    for s in sigs:
+        in_feed[s.get("publisher")] = in_feed.get(s.get("publisher"), 0) + 1
+    rows = []
+    for s in EXTRA:
+        doms = set(s.get("domains") or [])
+        recs = by_src.get(s["name"], []) + [r for r in status.get("websites", [])
+                                             if r.get("site") in doms and r["source"] != s["name"]]   # read under an existing name
+        rows.append({
+            "source": s["name"], "id": s["id"], "tier": s.get("tier"), "lang": s.get("lang"),
+            "checked_this_run": bool(recs),
+            "methods": sorted({r.get("method", "") for r in recs}),
+            "ok": sum(1 for r in recs if r.get("status") == "ok"), "failed": sum(1 for r in recs if r.get("status") != "ok"),
+            "errors": [r.get("error") for r in recs if r.get("error")][:3],
+            "items_found_this_run": sum(r.get("items", 0) for r in recs),
+            "items_in_feed_under_this_name": in_feed.get(s["name"], 0),
+            "note": EXTRA_SKIP.get(s["name"], ""),
+        })
+    return {"live_sources": len(EXTRA), "checked_this_run": sum(1 for r in rows if r["checked_this_run"]),
+            "with_at_least_one_ok_read": sum(1 for r in rows if r["ok"]),
+            "not_fetched": [{"source": k, "reason": v} for k, v in EXTRA_SKIP.items()],
+            "reference_only": [s["name"] for s in EXTRA_REF], "sources": rows}
+
 def main():
     now = datetime.now(timezone.utc)
+    load_extra()                                               # v10
     old = {}
     if OUT.exists():
         try:
@@ -904,6 +1012,30 @@ def main():
     # B. every other website, read directly
     site_items, status["websites"] = read_all_sites(state, now)
     take(site_items)
+
+    # D. v10: Google News searches of the additional sources (last EXTRA_GN_DAYS days, 4 at a time)
+    status["extra_google_news"] = []
+    gn_min = (now - timedelta(days=EXTRA_GN_DAYS + 1)).strftime("%Y-%m-%d")
+    def run_gn(job):
+        name, url, lang, any_pub, tier = job
+        time.sleep(1)
+        rec = {"source": name, "checked": True, "method": "Google News search (additional source)", "read": [url]}
+        try:
+            items, dropped = fetch(f"Google News · {name}", gn_window(url, EXTRA_GN_DAYS), True, False, gn_min,
+                                   (lang, tier) if any_pub else None)
+            rec.update(status="ok", items=len(items), out_of_scope=dropped)
+            return items, rec
+        except Exception as e:
+            rec.update(status="error", error=str(e)[:200], items=0)
+            return [], rec
+    with ThreadPoolExecutor(max_workers=EXTRA_GN_WORKERS) as ex:
+        for items, rec in ex.map(run_gn, EXTRA_GN):
+            new = [x for x in items if x["id"] not in store]
+            take(items)
+            rec["new_items"] = len(new)
+            status["extra_google_news"].append(rec)
+            print(("OK   " if rec["status"] == "ok" else "SKIP ") + f"Google News · {rec['source']}: {rec.get('items', 0)} items"
+                  + (f" - {rec.get('error')}" if rec.get("error") else ""))
 
     # C. Google News safety net
     if USE_GOOGLE_NEWS:
@@ -959,10 +1091,14 @@ def main():
         "new_items_this_run": len(new_ids), "new_item_ids": new_ids[:50], "items_in_feed": len(sigs),
         "polish_items_waiting_for_translation": sum(1 for s in sigs if s.get("lang") == "pl" and not s.get("translated")),
         "rss": status["rss"], "websites": web, "google_news": status["google_news"],
+        "extra_google_news": status.get("extra_google_news", []),                 # v10
         "not_monitored": [{"source": n, "reason": r} for n, r in NOT_MONITORED],
+        "additional_sources": extra_report(status, sigs),                        # v10
     })
     ok = sum(1 for r in web + status["rss"] if r.get("status") == "ok")
     print(f"Websites read directly: {ok}/{len(web) + len(status['rss'])} OK · {len(new_ids)} new items · {len(sigs)} in feed")
+    ex = extra_report(status, sigs)
+    print(f"Additional sources: {ex['checked_this_run']}/{ex['live_sources']} checked · {ex['with_at_least_one_ok_read']} read OK")   # v10
     print(f"Wrote {OUT}, {STATUS}")
 
 
