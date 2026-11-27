@@ -309,7 +309,7 @@ button.tg.as:hover{background:#fbd3e1}
 .ppp-loading #view{opacity:.35;transition:opacity .2s}
 </style>
 <script>
-document.documentElement.setAttribute('data-ppp','v105');
+document.documentElement.setAttribute('data-ppp','v111');
 document.documentElement.classList.add('ppp-loading');
 window.__quiet=true;
 window.__parsed=new Promise(function(r){window.__parsedOk=r;});
@@ -1033,6 +1033,7 @@ setTimeout(function(){window.__quiet=false;window.__parsedOk();document.document
     <div class="nl-controls">
       <div class="nl-field"><label for="nlFrom">From</label><input type="date" id="nlFrom"></div>
       <div class="nl-field"><label for="nlTo">To</label><input type="date" id="nlTo"></div>
+      <div class="nl-field"><label for="nlTech">Technology</label><select id="nlTech" aria-label="Newsletter technology"><option value="">All technologies</option></select></div>
       <input type="checkbox" id="nlRespect" hidden><select id="nlGroup" hidden><option value="category"></option></select>
       <button class="nl-gen" id="nlGenBtn">Generate</button>
     </div>
@@ -2868,7 +2869,7 @@ window.POL_EXCLUDE=new Set(['e3','w4','w5','n14','h27','u11','h24','n15','o3','x
   const DEF = {co:'',asset:'',tech:'',region:'',type:'',from:'2024-01-01',to:'',q:''};
   const FS  = {news:{...DEF}, signals:{...DEF}};
   const snap = () => ({...F});
-  const load = o => { Object.assign(F, DEF, o); const q = document.getElementById('q'); if(q) q.value = F.q || ''; };
+  const load = o => { const q0 = F.q; Object.assign(F, DEF, o); F.q = q0; const q = document.getElementById('q'); if(q) q.value = F.q || ''; };
   FS[view] = snap();
 
   /* count items for a view using that view's own filters */
@@ -4386,7 +4387,8 @@ details.rv[open]>summary{border-bottom:1px solid var(--line)}
   const DATACENTRE=/data cent(er|re)s?|centr(a|ów|ach) danych/i;
   function buildBrief(){
     let from=nl('nlFrom').value, to=nl('nlTo').value;
-    const inRange=s=>(!from||s.date>=from)&&(!to||s.date<=to);
+    const techSel=(nl('nlTech')||{}).value||'';
+    const inRange=s=>(!from||s.date>=from)&&(!to||s.date<=to)&&(!techSel||(s.tech||[]).includes(techSel));
     const ok=s=>!(window.isEditorialItem&&isEditorialItem(s))&&!(window.reviewOf&&reviewOf(s.id).status==='excluded')
       &&!(window.outOfScope&&outOfScope(s))&&!(window.offScopeLive&&offScopeLive(s))
       &&!ROUND.test((s.title||'')+' '+(s.title_pl||''))&&!DATACENTRE.test((s.title||'')+' '+(s.title_pl||''));
@@ -4457,9 +4459,9 @@ details.rv[open]>summary{border-bottom:1px solid var(--line)}
           <td style="vertical-align:middle;padding:0 10px 0 0"><table cellspacing="0" cellpadding="0" style="border-collapse:collapse;border:1px solid #bfb3c8"><tr><td style="width:22px;height:7px;background:#ffffff;font-size:1px;line-height:7px">&nbsp;</td></tr><tr><td style="width:22px;height:7px;background:#dc143c;font-size:1px;line-height:7px">&nbsp;</td></tr></table></td>
           <td style="vertical-align:middle;${A}font-size:9pt;letter-spacing:1.5px;color:#d9cbe2">POLAND POWER PULSE</td></tr></table>
         <div style="font-family:Georgia,'Crimson Text',serif;font-size:26pt;font-weight:bold;color:#ffffff;line-height:1.15;margin:6px 0 4px">What Moved in Polish Power</div>
-        <div style="${A}font-size:10.5pt;color:#e8dff0">Material changes · ${H(R.range)}</div></td></tr></table>`;
+        <div style="${A}font-size:10.5pt;color:#e8dff0">${techSel?H(TECH_LABEL[techSel]||techSel)+' · ':''}Material changes · ${H(R.range)}</div></td></tr></table>`;
     nl('nlPreview').innerHTML=`<div style="${A}color:#1f1f1f;max-width:760px;margin:0 auto">${head}${body}</div>`;
-    nl('nlMsg').textContent=`${pool.length} items · Top ${top.length} · ${notable.length} also notable`;
+    nl('nlMsg').textContent=`${techSel?(TECH_LABEL[techSel]||techSel)+' · ':''}${pool.length} items · Top ${top.length} · ${notable.length} also notable`;
   }
   function defaultRange(){
     const t=new Date(); let f,e;
@@ -4470,8 +4472,16 @@ details.rv[open]>summary{border-bottom:1px solid var(--line)}
   nlBuild=function(){ return buildBrief(); };
   ['nlGenBtn'].forEach(id=>{ const b=nl(id); if(b){ const c=b.cloneNode(true); b.parentNode.replaceChild(c,b); c.addEventListener('click',()=>nlBuild()); }});
   ['nlFrom','nlTo'].forEach(id=>{ const el=nl(id); const c=el.cloneNode(true); el.parentNode.replaceChild(c,el); c.addEventListener('change',()=>nlBuild()); });
+  /* technology filter: lists technologies present in the dashboard data; '' = all */
+  function fillTech(){
+    const sel=nl('nlTech'); if(!sel) return; const cur=sel.value;
+    const have=new Set((SIGNALS||[]).flatMap(s=>s.tech||[]));
+    const ids=[...TECHS.map(t=>t[0]),'cross'].filter(t=>have.has(t));
+    sel.innerHTML='<option value="">All technologies</option>'+ids.map(t=>`<option value="${esc(t)}" ${t===cur?'selected':''}>${esc(TECH_LABEL[t]||t)}</option>`).join('');
+  }
+  if(nl('nlTech')) nl('nlTech').addEventListener('change',()=>nlBuild());
   const oo=nl('nlOpen'); const oc=oo.cloneNode(true); oo.parentNode.replaceChild(oc,oo);
-  oc.addEventListener('click',()=>{ if(!nl('nlFrom').value||!nl('nlTo').value) defaultRange(); nlBuild(); nl('nlOverlay').classList.add('open'); });
+  oc.addEventListener('click',()=>{ fillTech(); if(!nl('nlFrom').value||!nl('nlTo').value) defaultRange(); nlBuild(); nl('nlOverlay').classList.add('open'); });
   window.__nlBrief=buildBrief;
 })();
 </script>
@@ -4479,7 +4489,7 @@ details.rv[open]>summary{border-bottom:1px solid var(--line)}
 <script>
 /* ═══ v102: newsletter downloads — Word, PDF, HTML, Outlook email, Copy ═══ */
 (function(){
-  const fname=ext=>{ const f=nl('nlFrom').value||'', t=nl('nlTo').value||''; return `Poland-Power-Pulse_Newsletter_${f}_to_${t}.${ext}`; };
+  const fname=ext=>{ const f=nl('nlFrom').value||'', t=nl('nlTo').value||'', te=(nl('nlTech')||{}).value||''; return `Poland-Power-Pulse_Newsletter${te?'_'+te:''}_${f}_to_${t}.${ext}`; };
   const TITLE='Poland Power Pulse — What Moved in Polish Power';
   const body=()=>nl('nlPreview').innerHTML;
   const save=(blob,name,msg)=>{ const u=URL.createObjectURL(blob), a=document.createElement('a'); a.href=u; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),1500); nl('nlMsg').textContent=msg; };
@@ -4697,6 +4707,741 @@ details.rv[open]>summary{border-bottom:1px solid var(--line)}
   render();
 })();
 </script>
+<script>
+/* ═══ v111 (27 Nov 2026): additional sources from "Additional Sources - Chatgpt.xlsx" and "additional_sources_claude.xlsx" ═══
+   Adds the sources to the 📚 Sources panel (de-duplicated against existing entries by name).
+   Live collection is done by feed_fetcher.py using config/additional_feed_sources.json; items still pass the
+   monitoring-scope filter (policy & market design · thermal & nuclear · storage & renewables · company & transaction signals). */
+(function(){
+  const ADD=[["Government & legislation", "RCL — Government Legislation Centre (Rządowy Proces Legislacyjny)", "Live feed · PL", "https://legislacja.gov.pl", "legislacja.gov.pl"], ["Government & legislation", "President's Office (Kancelaria Prezydenta)", "Live feed · PL", "https://prezydent.pl", "prezydent.pl"], ["Government & legislation", "Senate of Poland", "Live feed · PL", "https://www.senat.gov.pl/prace/komisje-senackie/posiedzenia%2C226%2C1%2C11446%2Ckomisja-klimatu-i-srodowiska.html", "senat.gov.pl"], ["Government & legislation", "Sejm API — committees (Energy, Climate & State Assets)", "Live feed · PL", "https://api.sejm.gov.pl/sejm/term10/committees", "api.sejm.gov.pl"], ["Government & legislation", "Monitor Polski (via ELI)", "Live feed · PL", "https://api.sejm.gov.pl/eli/acts/MP/{year}", "monitorpolski.gov.pl"], ["Government & legislation", "Council of Ministers communiqués", "Live feed · PL", "https://gov.pl/web/premier", "gov.pl/web/premier"], ["Government & legislation", "Ministry of Finance", "Live feed · PL", "https://gov.pl/web/finanse", "gov.pl/web/finanse"], ["Government & legislation", "Ministry of Industry", "Live feed · PL", "https://gov.pl/web/przemysl", "gov.pl/web/przemysl"], ["Government & legislation", "Ministry of Infrastructure", "Live feed · PL", "https://gov.pl/web/infrastruktura", "gov.pl/web/infrastruktura"], ["Government & legislation", "NABE — National Energy Security Agency (coal-asset carve-out)", "Live feed · PL", "https://news.google.com/rss/search?q=NABE+Narodowa+Agencja+Bezpieczeństwa+Energetycznego+węgiel&hl=pl&gl=PL&ceid=PL:pl", "gov.pl"], ["Government & legislation", "Government plenipotentiary for strategic energy infrastructure", "Live feed · PL", "https://gov.pl", "gov.pl"], ["Government & legislation", "Maritime Offices — Gdynia, Słupsk, Szczecin", "Live feed · PL", "https://www.umgdy.gov.pl/akty_prawne/", "umgdy.gov.pl|umsl.gov.pl|ums.gov.pl"], ["Government & legislation", "EkoPortal — environmental information register", "Live feed · PL", "https://ekoportal.gov.pl", "ekoportal.gov.pl"], ["Government & legislation", "dane.gov.pl — open data portal", "Reference / on-demand · PL", "https://api.dane.gov.pl/1.4/datasets?q=energia", "dane.gov.pl"], ["Regulators", "ACER — EU energy regulators agency", "Live feed · EN", "https://acer.europa.eu/electricity/security-of-supply/capacity-mechanisms", "acer.europa.eu"], ["Regulators", "EC DG COMP — State Aid Register", "Live feed · EN", "https://competition-cases.ec.europa.eu", "competition-cases.ec.europa.eu"], ["Regulators", "EC DG ENER — news", "Live feed · EN", "https://energy.ec.europa.eu", "energy.ec.europa.eu"], ["Regulators", "CJEU / General Court", "Reference / on-demand · EN", "https://curia.europa.eu", "curia.europa.eu"], ["Regulators", "KNF — Polish Financial Supervision Authority", "Live feed · PL", "https://knf.gov.pl", "knf.gov.pl"], ["System operators & market", "PSE — capacity market portal", "Live feed · PL", "https://www.pse.pl/rynek-mocy", "pse.pl/rynek-mocy"], ["System operators & market", "PSE — grid development plan & adequacy reports", "Live feed · PL", "https://pse.pl", "pse.pl"], ["System operators & market", "GAZ-SYSTEM", "Live feed · PL/EN", "https://www.gaz-system.pl/en/transmission-system/investment-projects/key-connections.html", "gaz-system.pl"], ["System operators & market", "ENTSO-E Transparency Platform", "Reference / on-demand · EN", "https://web-api.tp.entsoe.eu/api  (securityToken required)", "transparency.entsoe.eu"], ["System operators & market", "ENTSOG / GIE AGSI+", "Reference / on-demand · EN", "https://agsi.gie.eu/api", "entsog.eu|agsi.gie.eu"], ["Financing institutions", "NFOŚiGW — National Fund for Environmental Protection", "Live feed · PL", "https://www.gov.pl/web/nfosigw/magazyny-energii-elektrycznej-i-zwiazana-z-nimi-infrastruktura-dla-poprawy-stabilnosci-polskiej-sieci-elektroenergetycznej", "nfosigw.gov.pl"], ["Financing institutions", "BGK — Modernisation / Energy Transformation Fund", "Live feed · PL", "https://www.bgk.pl/krajowy-plan-odbudowy/g315-budowa-morskich-farm-wiatrowych-fundusz-na-rzecz-morskiej-energetyki-wiatrowej/", "bgk.pl"], ["Financing institutions", "EBRD — Poland projects", "Live feed · EN", "https://www.ebrd.com/home/what-we-do/projects.html?filterCountry=countries%2Fpoland", "ebrd.com"], ["Financing institutions", "CINEA — Innovation Fund / CEF Energy", "Live feed · EN", "https://cinea.ec.europa.eu", "cinea.ec.europa.eu"], ["Financing institutions", "EKF — Danish export credit", "Live feed · EN", "https://ekf.dk", "ekf.dk"], ["Financing institutions", "UK Export Finance", "Live feed · EN", "https://gov.uk/ukef", "gov.uk/ukef"], ["Financing institutions", "US DFC", "Live feed · EN", "https://dfc.gov", "dfc.gov"], ["Financing institutions", "Credit-rating press releases (Fitch · S&P · Moody's)", "Live feed · EN", "https://fitchratings.com", "fitchratings.com|spglobal.com|moodys.com"], ["Industry associations", "PSEW — Polish Wind Energy Association", "Live feed · PL/EN", "https://www.psew.pl/aktualnosci/", "psew.pl"], ["Industry associations", "TGPE — Polish Power Plants Association", "Live feed · PL", "https://tgpe.pl", "tgpe.pl"], ["Industry associations", "PTPiREE — Transmission & Distribution Association", "Live feed · PL", "https://ptpiree.pl", "ptpiree.pl"], ["Industry associations", "PKEE — Polish Electricity Committee", "Live feed · PL", "https://pkee.pl", "pkee.pl"], ["Industry associations", "Polish PV Association (PSF)", "Live feed · PL", "https://stowarzyszeniepv.pl/kategoria/aktualnosci/", "stowarzyszeniepv.pl"], ["Industry associations", "POLSIE — Polish Chamber of Renewable & Distributed Energy", "Live feed · PL", "https://polsie.pl", "polsie.pl"], ["Industry associations", "Polish heating chamber (Izba Gospodarcza Ciepłownictwo Polskie)", "Live feed · PL", "https://igcp.org.pl/aktualnosci/", "cieplownictwo.pl"], ["Industry associations", "Polish energy storage association (PSME)", "Live feed · PL", "https://psme.org.pl/czytaj/aktualnosci/", "psme.org.pl"], ["Industry associations", "Instrat Foundation", "Live feed · PL/EN", "https://energy.instrat.pl/en/electrical-system/power-plant-database/", "instrat.pl"], ["Industry associations", "WiseEuropa", "Live feed · PL/EN", "https://wise-europa.eu", "wise-europa.eu"], ["Industry associations", "Polish Economic Institute (PIE)", "Live feed · PL/EN", "https://pie.net.pl", "pie.net.pl"], ["Industry associations", "Instytut Jagielloński", "Live feed · PL", "https://ij.org.pl", "ij.org.pl"], ["Industry associations", "WindEurope", "Live feed · EN", "https://windeurope.org", "windeurope.org"], ["Industry associations", "SolarPower Europe", "Live feed · EN", "https://solarpowereurope.org", "solarpowereurope.org"], ["Industry associations", "FORATOM", "Live feed · EN", "https://foratom.org", "foratom.org"], ["Company registries", "KRS Open API", "Reference / on-demand · PL", "https://api-krs.ms.gov.pl/api/krs/OdpisAktualny/{krs}?rejestr=P&format=json", "api-krs.ms.gov.pl"], ["Company registries", "Monitor Sądowy i Gospodarczy (MSiG)", "Reference / on-demand · PL", "https://msig.ms.gov.pl", "msig.ms.gov.pl"], ["Company registries", "eKRS — financial statements repository", "Reference / on-demand · PL", "https://ekrs.ms.gov.pl", "ekrs.ms.gov.pl"], ["Company registries", "PAP MediaRoom", "Live feed · PL", "https://papmediaroom.pl", "papmediaroom.pl"], ["Company registries", "Newseria Biznes", "Live feed · PL", "https://biznes.newseria.pl", "biznes.newseria.pl"], ["Polish business press", "Dziennik Gazeta Prawna / Forsal", "Live feed · PL", "https://gazetaprawna.pl", "gazetaprawna.pl|forsal.pl"], ["Polish business press", "Business Insider Polska", "Live feed · PL", "https://businessinsider.com.pl", "businessinsider.com.pl"], ["Polish business press", "Money.pl", "Live feed · PL", "https://money.pl", "money.pl"], ["Polish business press", "Interia Biznes", "Live feed · PL", "https://biznes.interia.pl", "biznes.interia.pl"], ["Polish business press", "TVN24 Biznes", "Live feed · PL", "https://tvn24.pl/biznes", "tvn24.pl/biznes"], ["Polish business press", "Rzeczpospolita (main site)", "Live feed · PL", "https://rp.pl", "rp.pl"], ["Polish business press", "Parkiet", "Live feed · PL", "https://parkiet.com", "parkiet.com"], ["Specialist media (complementary)", "Nowa Energia", "Live feed · PL", "https://nowa-energia.com.pl", "nowa-energia.com.pl"], ["International media", "offshoreWIND.biz", "Live feed · EN", "https://www.offshorewind.biz/feed/", "offshorewind.biz"], ["International media", "Offshore Energy", "Live feed · EN", "https://www.offshore-energy.biz/feed/", "offshore-energy.biz"], ["International media", "reNEWS", "Live feed · EN", "https://renews.biz", "renews.biz"], ["International media", "NucNet", "Live feed · EN", "https://nucnet.org", "nucnet.org"], ["International media", "Nuclear Engineering International", "Live feed · EN", "https://neimagazine.com", "neimagazine.com"], ["International media", "ANS Nuclear Newswire", "Live feed · EN", "https://ans.org/news", "ans.org/news"], ["International media", "Power Technology", "Live feed · EN", "https://power-technology.com", "power-technology.com"], ["International media", "POWER Magazine", "Live feed · EN", "https://powermag.com", "powermag.com"], ["International media", "Euractiv", "Live feed · EN", "https://euractiv.com", "euractiv.com"], ["International media", "Energy Monitor", "Live feed · EN", "https://energymonitor.ai", "energymonitor.ai"], ["International media", "bne IntelliNews", "Live feed · EN", "https://intellinews.com", "intellinews.com"], ["International media", "TVP World", "Live feed · EN", "https://tvpworld.com/95984612/race-to-2036-will-poland-deliver-nuclear-power", "tvpworld.com"], ["International media", "Poland In", "Live feed · EN", "https://polandin.com", "polandin.com"], ["International media", "Corporate wires (Business Wire · GlobeNewswire · PR Newswire)", "Live feed · EN", "https://businesswire.com", "businesswire.com|globenewswire.com|prnewswire.com"], ["International media", "Argus · Montel · S&P Global (free headlines only)", "Live feed · EN", "https://argusmedia.com", "argusmedia.com|montelnews.com|spglobal.com"], ["Company disclosures", "Equinor (Bałtyk 2/3)", "Live feed · EN", "https://baltyk123.pl/en/all-news/", "equinor.com"], ["Company disclosures", "Northland Power / Baltic Power", "Live feed · EN", "https://balticpower.pl/news/", "northlandpower.com"], ["Company disclosures", "KGHM — SMR / own generation", "Live feed · PL/EN", "https://media.kghm.com/en/news-and-press-releases", "kghm.com"], ["Company disclosures", "Orlen Synthos Green Energy (OSGE)", "Live feed · PL/EN", "https://osge.com/en/news/", "osge.com"], ["Company disclosures", "Westinghouse / Bechtel — Poland nuclear", "Live feed · EN", "https://info.westinghousenuclear.com/news/tag/news-releases", "westinghousenuclear.com|bechtel.com"], ["Company disclosures", "KHNP — Pątnów nuclear (with ZE PAK)", "Live feed · EN", "https://khnp.co.kr/eng", "khnp.co.kr/eng"], ["Company disclosures", "Siemens Energy · GE Vernova · Mitsubishi Power · Wärtsilä · INNIO", "Live feed · EN", "https://www.gevernova.com/news/media-hub?region=Poland", "gevernova.com"], ["Company disclosures", "Vestas · Nordex · Siemens Gamesa · Enercon", "Live feed · EN", "https://news.google.com/rss/search?q=(Vestas+OR+Nordex+OR+%22Siemens+Gamesa%22+OR+Enercon)+Poland+(order+OR+repowering+OR+offshore)&hl=en-GB&gl=PL&ceid=PL:en", "news.google.com"], ["Company disclosures", "Fluence · Tesla · Sungrow · BYD · Hithium · CATL", "Live feed · EN", "https://news.google.com/rss/search?q=(Fluence+OR+Tesla+OR+Sungrow+OR+BYD+OR+Hithium+OR+CATL)+Poland+BESS&hl=en-GB&gl=PL&ceid=PL:en", "news.google.com"], ["Company disclosures", "Budimex · Polimex Mostostal · Mostostal Warszawa (listed EPCs)", "Live feed · PL/EN", "https://biznes.pap.pl/espi/current  (filter issuer)", "gpw.pl|biznes.pap.pl"], ["Company disclosures", "Bogdanka · PGG (coal)", "Live feed · PL", "https://lw.com.pl", "lw.com.pl|pgg.pl"], ["Company disclosures", "Mid-size RES/BESS developers (Respect Energy, Columbus, Photon, Greenvolt, Qair, R.Power, Lightsource bp, Statkraft)", "Live feed · PL/EN", "https://power.greenvolt.com/news/", "power.greenvolt.com"], ["Company disclosures", "Ports: Gdańsk · Baltic Hub · Szczecin-Świnoujście", "Live feed · PL/EN", "https://portgdansk.pl", "portgdansk.pl|balticport.pl"], ["Data & trackers", "Global Energy Monitor (coal & gas plant trackers)", "Reference / on-demand · EN", "https://globalenergymonitor.org/projects/", "globalenergymonitor.org"], ["Data & trackers", "Ember", "Reference / on-demand · EN", "https://ember-energy.org/data/", "ember-energy.org"], ["Data & trackers", "Energy-Charts (Fraunhofer ISE)", "Reference / on-demand · EN", "https://api.energy-charts.info  (country=pl)", "energy-charts.info"], ["Data & trackers", "KOBiZE — EU ETS administrator", "Live feed · PL", "https://kobize.pl", "kobize.pl"], ["Data & trackers", "ARE — Energy Market Agency", "Live feed · PL", "https://are.waw.pl", "are.waw.pl"], ["Data & trackers", "GUS — Statistics Poland", "Reference / on-demand · PL", "https://bdl.stat.gov.pl/api/v1", "stat.gov.pl"], ["Data & trackers", "NCBJ — National Centre for Nuclear Research", "Live feed · PL/EN", "https://ncbj.gov.pl", "ncbj.gov.pl"], ["Analysis & legal briefings", "Polish law-firm briefings (Wardyński · Rymarz Zdort · DZP · Bird & Bird)", "Live feed · PL/EN", "https://wardynski.com.pl", "wardynski.com.pl|rymarzzdort.com|dzp.pl|twobirds.com"], ["System operators & market", "EEX Transparency and ACER’s REMIT portal", "Live feed · EN", "https://www.eex-transparency.com/power/pl/umms/", "eex-transparency.com"], ["Procurement & permitting", "Regional environmental directorates (RDOŚ)", "Live feed · PL", "https://www.gov.pl/web/rdos-gdansk/obwieszczenia-i-zawiadomienia", "gov.pl"], ["Procurement & permitting", "GUNB construction register (RWDZ)", "Reference / on-demand · PL", "https://wyszukiwarka.gunb.gov.pl/", "wyszukiwarka.gunb.gov.pl"], ["Procurement & permitting", "Pomorskie Voivodeship Office", "Live feed · PL", "https://www.gov.pl/web/uw-pomorski/rejestr-wnioskow-i-decyzji-o-pozwoleniu-na-budowe", "gov.pl"], ["Company disclosures", "PGE Baltica", "Live feed · PL / EN", "https://pgebaltica.pl/en/", "pgebaltica.pl"], ["System operators & market", "TAURON Dystrybucja and Enea Operator", "Live feed · PL", "https://www.tauron-dystrybucja.pl/uslugi-dystrybucyjne/uslugi-elastycznosci", "tauron-dystrybucja.pl"], ["Company disclosures", "OX2", "Live feed · PL / EN", "https://www.ox2.com/pl/polska/media/aktualnosci-i-informacje-prasowe/", "ox2.com"], ["Company disclosures", "European Energy", "Live feed · PL / EN", "https://pl.europeanenergy.com/komunikat-prasowy/", "pl.europeanenergy.com"], ["Company disclosures", "Ignitis Group", "Live feed · EN", "https://ignitisgrupe.lt/en/news/poland", "ignitisgrupe.lt"], ["Company disclosures", "GOLDBECK SOLAR", "Live feed · EN", "https://goldbecksolar.com/en/goldbeck-solar-polska-appointed-as-epc-contractor-for-8-mw-16-mwh-battery-storage-project-in-pol/", "goldbecksolar.com"], ["Procurement & permitting", "Utility procurement portals", "Live feed · PL", "https://swpp2.gkpge.pl/servlet/HomeServlet?MP_action=publicFilesList&MP_module=main&folder=000900080001", "swpp2.gkpge.pl"], ["Data & trackers", "ENTSO-E adequacy assessments", "Live feed · EN", "https://www.entsoe.eu/eraa/", "entsoe.eu"], ["Specialist media (complementary)", "GospodarkaMorska.pl", "Live feed · PL", "https://www.gospodarkamorska.pl/baltic-power-jak-wyglada-transfer-technikow-na-morska-farme-wiatrowa-94958", "gospodarkamorska.pl"], ["Specialist media (complementary)", "GLOBENERGIA", "Live feed · PL", "https://globenergia.pl/kategoria/magazyny-energii/", "globenergia.pl"]];
+  const have=new Set(SOURCES.map(x=>x[1].toLowerCase()));
+  ADD.forEach(a=>{ if(!have.has(a[1].toLowerCase())){ SOURCES.push(a); have.add(a[1].toLowerCase()); } });
+  const order=[...new Set(SOURCES.map(x=>x[0]))];
+  SOURCES.sort((a,b)=>order.indexOf(a[0])-order.indexOf(b[0]));
+})();
+</script>
+<!-- PPP v108 START -->
+<style>
+/* ═══ v108: rephrased headlines · expandable summaries · acronym tooltips · project timelines ═══ */
+.vh{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+abbr.acr{text-decoration:underline dotted;text-decoration-color:color-mix(in srgb,var(--purple) 55%,#fff);text-underline-offset:2px;cursor:help;border:0}
+abbr.acr:focus-visible{outline:2px solid var(--purple);outline-offset:1px;border-radius:2px}
+#acr-tip{position:fixed;z-index:200;max-width:300px;background:#2d1335;color:#fff;border-radius:8px;padding:8px 11px;font-size:11.5px;line-height:1.4;box-shadow:0 8px 24px rgba(30,15,35,.35);pointer-events:none}
+#acr-tip[hidden]{display:none}
+#acr-tip b{display:block;font-size:12.5px;letter-spacing:.04em;margin-bottom:2px}
+#acr-tip span{display:block}
+#acr-tip span[lang="pl"]{color:#e3d4ec;font-style:italic}
+/* News Feed accordion */
+.nx-disc{font-size:11px;color:var(--mute);padding:9px 14px;border-bottom:1px solid var(--line);margin:0;line-height:1.45}
+.nx-table td.nhd{padding-top:9px;padding-bottom:9px}
+.nx-btn{all:unset;box-sizing:border-box;display:flex;gap:7px;align-items:flex-start;width:100%;cursor:pointer;font-family:'Crimson Text',Georgia,serif;font-size:16px;font-weight:700;line-height:1.25;color:var(--ink);border-radius:5px}
+.nx-btn:hover .nx-t{color:var(--red)}
+.nx-btn:focus-visible{outline:2px solid var(--purple);outline-offset:3px}
+.nx-car{flex:none;font-family:Poppins,system-ui,sans-serif;font-size:10px;color:var(--purple);margin-top:4px;transition:transform .15s}
+.nx-btn[aria-expanded="true"] .nx-car{transform:rotate(90deg)}
+.nx-btn[aria-expanded="true"] .nx-t{color:var(--purple)}
+.nx-row td{padding:0 14px 14px!important;background:#fbfafc;border-bottom:1px solid var(--line)}
+.nx-row:hover td{background:#fbfafc!important}
+.nx-panel{border-left:3px solid var(--purple);padding:10px 14px 4px;margin-left:16px;max-width:980px}
+.nx-lab{display:block;font-size:9px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--mute);margin:0 0 3px}
+.nx-sum{font-size:12.5px;line-height:1.6;color:#2f2836;margin:0 0 10px}
+.nx-orig{font-size:12px;line-height:1.45;color:var(--ink);margin:0 0 8px}
+.nx-orig i{font-style:normal;color:var(--dim)}
+.nx-flag{display:inline-block;font-size:10px;font-weight:700;color:#9a5b00;background:#fff6e5;border:1px solid #f2d9a6;border-radius:10px;padding:1px 8px;margin:0 0 8px}
+.nx-acts{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin:4px 0 8px}
+.nx-open{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:#fff!important;background:var(--purple);border-radius:7px;padding:6px 12px;text-decoration:none}
+.nx-open:hover{background:var(--purple-2)}
+.nx-open:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.nx-also{font-size:11px;color:var(--dim)}
+.nx-also a{color:var(--purple);margin-right:8px;text-decoration:underline;text-underline-offset:2px}
+.nx-pj{display:inline-flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:11px;color:var(--dim)}
+.nx-note{font-size:10.5px;color:var(--mute);margin:2px 0 6px}
+/* Signal Monitor → project links */
+.pj-row{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
+.pj-link{font-family:inherit;font-size:11.5px;font-weight:600;color:var(--purple);background:var(--purple-lt);border:1px solid #ddd0e3;border-radius:14px;padding:4px 11px;cursor:pointer}
+.pj-link span{font-weight:400;color:var(--dim)}
+.pj-link:hover{border-color:var(--purple)}
+.pj-link:focus-visible,.pj-asset:focus-visible,.pt-card:focus-visible,.pt-back:focus-visible,.pt-sort button:focus-visible,.pt-copy:focus-visible{outline:2px solid var(--purple);outline-offset:2px}
+.pj-asset{font-family:inherit;font-size:11px;color:var(--red);background:var(--red-lt);border:1px solid #f6c3d4;border-radius:6px;padding:3px 8px;cursor:pointer}
+.pj-note{font-size:10.5px;color:var(--mute)}
+.tab.pt-tab{border-left:1px solid var(--line);border-radius:7px}
+/* Project Timelines */
+.pt-head{border-left-color:var(--purple)!important}
+.pt-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.pt-top h2{margin:0;font-size:28px;color:var(--purple);text-align:left}
+.pt-msum{font-size:12.5px;line-height:1.6;color:#3b3442;margin:0 0 8px}
+.pt-sum{font-size:13px;line-height:1.6;color:#2f2836;margin:12px 0 0;max-width:1100px}
+.pt-mshead{font-size:22px;color:var(--purple);margin:18px 0 10px}
+.pt-foot{font-size:11px;color:var(--mute);line-height:1.5;margin:18px 0 0;padding:10px 14px;border-top:1px solid var(--line)}
+.pt-sub{font-size:12px;color:var(--dim)}
+.pt-back{font-family:inherit;font-size:12px;font-weight:600;padding:7px 12px;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--purple);cursor:pointer}
+.pt-back:hover{border-color:var(--purple)}
+.pt-ctrl{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1.5fr) minmax(0,1.1fr) minmax(0,.8fr) minmax(0,.8fr) auto;gap:10px;align-items:end;margin-top:12px}
+.pt-ctrl label{display:flex;flex-direction:column;gap:4px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);min-width:0}
+.pt-ctrl input,.pt-ctrl select{font-family:inherit;font-size:12px;font-weight:400;letter-spacing:0;text-transform:none;height:36px;box-sizing:border-box;padding:0 9px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);width:100%;min-width:0}
+.pt-ctrl input:focus,.pt-ctrl select:focus{outline:2px solid var(--purple)}
+.pt-sort{display:flex;gap:4px}
+.pt-sort button{font-family:inherit;font-size:11.5px;height:36px;padding:0 11px;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--dim);cursor:pointer;white-space:nowrap}
+.pt-sort button[aria-pressed="true"]{background:var(--purple);border-color:var(--purple);color:#fff}
+.pt-note{font-size:11px;color:var(--mute);margin:10px 0 0;line-height:1.5}
+.pt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.pt-card{all:unset;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;background:#fff;border:1px solid var(--line);border-top:4px solid var(--pc,#43224d);border-radius:var(--r);padding:13px 15px;box-shadow:var(--shadow);cursor:pointer;min-width:0}
+.pt-card:hover{box-shadow:0 10px 26px rgba(40,20,50,.12)}
+.pt-card h3{font-size:18px;color:var(--ink);margin:0;line-height:1.2}
+.pt-card .pt-cm{font-size:11px;color:var(--dim);line-height:1.4}
+.pt-card .pt-cl{font-size:12px;line-height:1.4;color:var(--ink);overflow-wrap:anywhere}
+.pt-card .pt-cn{font-size:11px;font-weight:700;color:var(--purple)}
+.pt-proj{background:#fff;border:1px solid var(--line);border-left:5px solid var(--purple);border-radius:var(--r);box-shadow:var(--shadow);padding:16px 18px;margin-bottom:12px}
+.pt-proj-top{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.pt-proj h2{font-size:24px;color:var(--purple);margin:0;flex:1;min-width:200px}
+.pt-copy{font-family:inherit;font-size:11.5px;padding:6px 11px;border-radius:7px;border:1px solid var(--line);background:#fff;color:var(--purple);cursor:pointer}
+.pt-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px 16px;margin:12px 0 0}
+.pt-facts div{min-width:0}
+.pt-facts dt{font-size:9px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--mute)}
+.pt-facts dd{margin:2px 0 0;font-size:12.5px;line-height:1.4;overflow-wrap:anywhere}
+.pt-facts dd.pt-latest{font-weight:600}
+.pt-tl{list-style:none;margin:0;padding:0 0 0 4px}
+.pt-ms{position:relative;display:grid;grid-template-columns:118px minmax(0,1fr);gap:12px;padding:0 0 16px 18px;border-left:2px solid var(--line);margin-left:6px}
+.pt-ms:last-child{padding-bottom:4px}
+.pt-ms::before{content:"";position:absolute;left:-7px;top:3px;width:12px;height:12px;border-radius:50%;background:var(--sc,#43224d);border:2px solid #fff;box-shadow:0 0 0 1px var(--sc,#43224d)}
+.pt-date{font-size:12px;font-weight:700;color:var(--ink);line-height:1.3}
+.pt-date small{display:block;font-size:9.5px;font-weight:500;color:var(--mute);margin-top:2px}
+.pt-body{background:#fff;border:1px solid var(--line);border-radius:9px;padding:10px 13px;min-width:0;box-shadow:var(--shadow)}
+.pt-tags{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-bottom:5px}
+.pt-pname{font-family:inherit;font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:12px;border:1px solid var(--purple);background:#fff;color:var(--purple);cursor:pointer}
+.pt-pname:hover{background:var(--purple);color:#fff}
+.pt-pname:focus-visible{outline:2px solid var(--purple);outline-offset:2px}
+.pt-stage{font-size:10px;font-weight:700;padding:2px 9px;border-radius:12px;background:color-mix(in srgb,var(--sc) 12%,#fff);color:var(--sc)}
+.pt-conf{font-size:9.5px;font-weight:700;padding:1px 8px;border-radius:10px;background:#fff3dc;color:#a15c00}
+.pt-rev{font-size:9.5px;font-weight:700;padding:1px 8px;border-radius:10px;border:1px solid}
+.pt-rev.ok{background:#e3f4ea;color:#137a43;border-color:#b9e2c8}
+.pt-rev.pend{background:#f4f2f6;color:#6b6475;border-color:#ddd6e3;border-style:dashed}
+.pt-rev.fix{background:#fff3dc;color:#a15c00;border-color:#f1d49a}
+.pt-text{font-size:13.5px;font-weight:600;line-height:1.4;margin:0 0 6px;color:var(--ink);overflow-wrap:anywhere}
+.pt-src{font-size:11.5px;color:var(--dim);line-height:1.5;overflow-wrap:anywhere}
+.pt-src a{font-weight:700;color:var(--purple)}
+.pt-orig{display:block;font-size:11px;color:var(--mute);margin-top:2px}
+.pt-also{font-size:11px;color:var(--dim);margin-top:4px;overflow-wrap:anywhere}
+.pt-also a{color:var(--purple);margin-right:8px;text-decoration:underline;text-underline-offset:2px}
+.pt-meta{font-size:10.5px;color:var(--mute);margin-top:4px}
+.pt-rel{margin-top:12px;border:1px solid var(--line);border-radius:9px;background:#faf8fb}
+.pt-rel summary{cursor:pointer;padding:9px 12px;font-size:12px;font-weight:600;color:var(--purple)}
+.pt-rel ul{margin:0;padding:0 12px 10px 28px}
+.pt-rel li{font-size:11.5px;line-height:1.5;margin:3px 0;overflow-wrap:anywhere}
+.pt-rel li a{color:var(--purple)}
+.pt-empty{background:#fff;border:1px dashed var(--line);border-radius:var(--r);padding:30px 20px;text-align:center;color:var(--dim)}
+@media(max-width:1100px){.pt-ctrl{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){.pt-ctrl{grid-template-columns:1fr}.pt-ms{grid-template-columns:1fr;gap:4px}.nx-panel{margin-left:0}.tabs{flex-wrap:wrap}}
+
+</style>
+<script>
+/* ═══ v108 (25 Nov 2026): rephrased headlines + expandable summaries · bilingual concept search ·
+       acronym tooltips · project milestone timelines · Project Timelines view + clickable drill-down ═══
+   Works for curated items, data/signals.json live items and future enriched items:
+     • reads display_title / summary / summary_status / project_ids / milestone / acronyms when the
+       enrichment script has written them, and falls back gracefully when they are absent;
+     • the publisher headline (src_title / title_pl), translation (src_en), URL and date are never changed;
+     • timelines are built from structured item data (never from the rendered page) and rebuilt only
+       when SIGNALS or the configuration changes;
+     • configuration lives in ONE block below (PPP_CONFIG) and is refreshed at runtime from
+       config/*.json when those files are published with the site.                                   */
+(function(){
+  'use strict';
+  const W = window;
+  /* ═════════════ CONFIGURATION (generated from config/*.json by scripts/embed_config.py) ═════════════ */
+  const PPP_CONFIG = /*PPP_CONFIG_START*/{"acronyms":{"URE":{"pl":"Urząd Regulacji Energetyki","en":"Energy Regulatory Office"},"PSE":{"pl":"Polskie Sieci Elektroenergetyczne","en":"Polish transmission system operator"},"PEJ":{"pl":"Polskie Elektrownie Jądrowe","en":"Polish Nuclear Power Plants"},"OSP":{"pl":"Operator Systemu Przesyłowego","en":"Transmission System Operator"},"OSD":{"pl":"Operator Systemu Dystrybucyjnego","en":"Distribution System Operator"},"TSO":{"en":"Transmission System Operator"},"DSO":{"en":"Distribution System Operator"},"BESS":{"en":"Battery Energy Storage System"},"CCGT":{"en":"Combined-Cycle Gas Turbine"},"OCGT":{"en":"Open-Cycle Gas Turbine"},"CHP":{"en":"Combined Heat and Power"},"SMR":{"en":"Small Modular Reactor"},"NPP":{"en":"Nuclear Power Plant"},"FID":{"en":"Final Investment Decision"},"CfD":{"en":"Contract for Difference","aliases":["CFD"]},"EPC":{"en":"Engineering, Procurement and Construction"},"PAA":{"pl":"Państwowa Agencja Atomistyki","en":"National Atomic Energy Agency"},"NFOŚiGW":{"pl":"Narodowy Fundusz Ochrony Środowiska i Gospodarki Wodnej","en":"National Fund for Environmental Protection and Water Management"},"KPO":{"pl":"Krajowy Plan Odbudowy","en":"Poland’s National Recovery and Resilience Plan"},"TGE":{"pl":"Towarowa Giełda Energii","en":"Polish Power Exchange"},"CSIRE":{"pl":"Centralny System Informacji Rynku Energii","en":"Central Energy Market Information System"},"OZE":{"pl":"Odnawialne Źródła Energii","en":"Renewable energy sources"},"GDOŚ":{"pl":"Generalna Dyrekcja Ochrony Środowiska","en":"General Directorate for Environmental Protection"},"UOKiK":{"pl":"Urząd Ochrony Konkurencji i Konsumentów","en":"Office of Competition and Consumer Protection"},"BGK":{"pl":"Bank Gospodarstwa Krajowego","en":"Polish state development bank"},"EIB":{"en":"European Investment Bank"},"PPA":{"en":"Power Purchase Agreement"},"NECP":{"en":"National Energy and Climate Plan"},"KPEiK":{"pl":"Krajowy Plan w dziedzinie Energii i Klimatu","en":"National Energy and Climate Plan"}},"concepts":[{"id":"capacity-market","terms":["capacity market","capacity mechanism","capacity auction*","capacity contract*","rynek mocy","rynk* mocy","mechanizm* mocow*","aukcj* mocy","aukcj* rynku mocy"]},{"id":"energy-storage","terms":["energy storage","storage","storage facilit*","magazyn* energii","magazyn*","magazynowani* energii"]},{"id":"battery-storage","terms":["battery storage","battery energy storage system*","battery","batteries","bess","magazyn* bateryjn*","bateri*","akumulator*"]},{"id":"offshore-wind","terms":["offshore wind","offshore wind farm*","offshore","morsk* energetyk* wiatrow*","morsk* farm* wiatrow*","farm* wiatrow* na morzu","offshore wind energy"]},{"id":"onshore-wind","terms":["onshore wind","onshore wind farm*","onshore","ladow* energetyk* wiatrow*","ladow* farm* wiatrow*","farm* wiatrow*","wind farm*","elektrowni* wiatrow*"]},{"id":"wind","terms":["wind","wiatr*","wiatrow*"]},{"id":"solar","terms":["solar","pv","photovoltaic*","fotowolt*","farm* fotowoltaiczn*","solar park*","solar farm*"]},{"id":"nuclear","terms":["nuclear","atomic","jadrow*","atomow*","elektrowni* jadrow*","reactor*","reaktor*"]},{"id":"grid-connection","terms":["grid connection*","connection to the grid","connection agreement*","connection condition*","connection point*","przylaczeni* do sieci","przylacz* do sieci","warunk* przylaczeni*","umow* przylaczeniow*","przylaczeni*"]},{"id":"grid","terms":["grid","grids","network*","siec","sieci","sieciow*"]},{"id":"permit","terms":["permit*","licen*","consent*","pozwoleni*","koncesj*","zezwoleni*"]},{"id":"construction-permit","terms":["construction permit*","building permit*","construction licen*","pozwoleni* na budow*"]},{"id":"environmental-decision","terms":["environmental decision*","environmental approval*","environmental permit*","decyzj* srodowiskow*","decyzj* o srodowiskowych uwarunkowaniach","srodowiskowych uwarunkowan*"]},{"id":"fid","terms":["final investment decision*","fid","ostateczn* decyzj* inwestycyjn*","decyzj* inwestycyjn*"]},{"id":"ccgt","terms":["combined cycle gas turbine*","combined cycle","ccgt","gas steam","gas steam unit*","blok* gazowo parow*","blok* parowo gazow*","gazowo parow*","parowo gazow*"]},{"id":"ocgt","terms":["open cycle gas turbine*","open cycle","ocgt","peaker*","peaking unit*","peaking gas","turbin* gazow* w cyklu otwartym","jednostk* szczytow*","szczytow* elektrowni* gazow*"]},{"id":"gas","terms":["gas fired","gas plant*","gas turbine*","gazow*","gaz"]},{"id":"cogeneration","terms":["cogeneration","combined heat and power","chp","kogeneracj*","kogeneracyjn*","elektrocieplown*"]},{"id":"cfd","terms":["contract for difference","contracts for difference","cfd","cfds","kontrakt* roznicow*"]},{"id":"res","terms":["renewable energy sources","renewable energy source","renewables","renewable energy","res act","oze","odnawialn* zrodl* energii","odnawialn*"]},{"id":"tso","terms":["transmission system operator*","tso","operator* systemu przesylowego","osp"]},{"id":"dso","terms":["distribution system operator*","dso","dsos","operator* systemu dystrybucyjnego","osd"]},{"id":"auction","terms":["auction*","aukcj*"]},{"id":"financing","terms":["financing","financial close","loan*","project finance","finansowani*","kredyt*","pozyczk*"]},{"id":"acquisition","terms":["acquisition*","acquire*","buys","takeover","stake","przejeci*","przejmuj*","zakup*","sprzedaz*","sale of"]},{"id":"commissioning","terms":["commissioning","commissioned","first power","first electricity","rozruch*","uruchomieni*","oddani* do eksploatacji"]},{"id":"construction","terms":["construction","build","builds","building","budow*","buduj*"]},{"id":"hydrogen","terms":["hydrogen","wodor*","wodoru"]},{"id":"heat","terms":["district heat*","heat source*","heating","cieplown*","cieplownictw*","zrodl* ciepla"]},{"id":"tender","terms":["tender*","procurement","przetarg*","postepowani* przetargow*"]}],"stages":[{"id":"PLAN","order":1,"label":"Announced / Planning","color":"#5f5866"},{"id":"PERM","order":2,"label":"Site & Permitting","color":"#3b5bdb"},{"id":"AUC","order":3,"label":"Support / Auction","color":"#0b7285"},{"id":"FIN","order":4,"label":"FID & Financing","color":"#7a3fa0"},{"id":"PROC","order":5,"label":"Procurement & Contracting","color":"#c2410c"},{"id":"CON","order":6,"label":"Construction","color":"#e0044e"},{"id":"COM","order":7,"label":"Commissioning","color":"#b45309"},{"id":"OPS","order":8,"label":"Operational","color":"#137a43"},{"id":"DELAY","order":9,"label":"Delayed / Revised","color":"#d97706"},{"id":"CANCEL","order":10,"label":"Suspended / Cancelled","color":"#b0003a"},{"id":"OWN","order":11,"label":"Ownership Change","color":"#862e9c"}],"projects":{"lubiatowo-kopalino-npp":{"name":"Lubiatowo-Kopalino NPP","owners":["PEJ"],"partners":["Westinghouse","Bechtel"],"technology":["nuclear"],"region":"Pomerania","capacity":"3 × AP1000 (1,250 MWe each) = 3,750 MWe","capacity_source":"https://pej.pl/en/the-project/key-information/","asset_tags":["Lubiatowo-Kopalino NPP"],"aliases":["Lubiatowo-Kopalino","Lubiatowo Kopalino","Lubiatowo","Choczewo nuclear","first Polish nuclear plant","first Polish nuclear power plant","Poland's first nuclear power plant","Poland’s first nuclear power plant","first nuclear power plant in Poland","PEJ AP1000","AP1000 Pomerania","pierwsza elektrownia jądrowa","pierwszej elektrowni jądrowej"],"context":[{"term":"Westinghouse","requires_any":["AP1000","Polish plant","Polish nuclear","PEJ","Pomerania","Poland's first","Poland’s first"],"excludes_any":["second nuclear","second Polish","Ukraine","Czech","Bulgaria"]},{"term":"AP1000","requires_any":["Poland","Polish","PEJ","Pomerania"],"excludes_any":["second nuclear","second Polish"]}],"exclude_any":["second nuclear","second Polish nuclear","drugiej elektrowni","druga elektrownia","EJ2","BWRX","Pątnów"]},"baltic-power":{"name":"Baltic Power","owners":["ORLEN","Northland Power"],"partners":["ORLEN Neptun"],"technology":["offshore"],"region":"Baltic Sea","capacity":"1.14 GW (76 × Vestas 15 MW)","capacity_source":"https://northlandpower.com/northlands-baltic-power-offshore-wind-project-completes-installation-of-all-76-turbines/","asset_tags":["Baltic Power"],"aliases":["Baltic Power"],"context":[],"exclude_any":[]},"baltyk-2-3":{"name":"Bałtyk 2 & 3","owners":["Polenergia","Equinor"],"partners":[],"technology":["offshore"],"region":"Baltic Sea","capacity":"Bałtyk 2 720 MW + Bałtyk 3 720 MW = 1,440 MW","capacity_source":"https://www.polenergia.pl/en/raporty_biezace/making-final-investment-decisions-on-the-implementation-of-offshore-wind-farm-projects-fid/","asset_tags":["Bałtyk 2 & 3"],"aliases":["Bałtyk 2","Bałtyk 3","Bałtyk II","Bałtyk III","MFW Bałtyk II","MFW Bałtyk III","Baltyk 2","Baltyk 3"],"context":[],"exclude_any":[]},"baltyk-1":{"name":"Bałtyk 1","owners":["Polenergia","Equinor"],"partners":[],"technology":["offshore"],"region":"Baltic Sea","capacity":"1,560 MW","capacity_source":"https://www.polenergia.pl/en/raporty_biezace/offshore-wind-farms-auction-results/","asset_tags":["Bałtyk 1"],"aliases":["Bałtyk 1","Bałtyk I","MFW Bałtyk I","Baltyk 1"],"context":[],"exclude_any":[]},"baltica-2":{"name":"Baltica 2","owners":["PGE","Ørsted"],"partners":["Van Oord","Siemens Gamesa"],"technology":["offshore"],"region":"Baltic Sea","capacity":"Up to 1,498 MW (~1.5 GW)","capacity_source":"https://www.gkpge.pl/en/for-investors/current-reports/adoption-of-the-final-investment-decision-concerning-the-baltica-2-project","asset_tags":["Baltica 2","Baltica 2 (~1.5 GW)"],"aliases":["Baltica 2","Baltica-2","Baltica II"],"context":[],"exclude_any":[]},"baltica-9":{"name":"Baltica 9 / F.E.W. Baltic II","owners":["PGE"],"partners":[],"technology":["offshore"],"region":"Baltic Sea","capacity":"Baltica 9: 975 MW; F.E.W. Baltic II: 350 MW","capacity_source":"https://www.ure.gov.pl/en/communication/news/486,Offshore-First-auction-for-offshore-wind-farms-concluded.html","asset_tags":["Baltica 9","F.E.W. Baltic II"],"aliases":["Baltica 9","F.E.W. Baltic II","FEW Baltic II","F.E.W. Baltic"],"context":[],"exclude_any":[]},"baltic-east":{"name":"Baltic East","owners":["ORLEN"],"partners":[],"technology":["offshore"],"region":"Baltic Sea","capacity":"900 MW","capacity_source":"https://www.ure.gov.pl/en/communication/news/486,Offshore-First-auction-for-offshore-wind-farms-concluded.html","asset_tags":["Baltic East"],"aliases":["Baltic East"],"context":[],"exclude_any":[]},"bc-wind":{"name":"BC-Wind","owners":["Ocean Winds"],"partners":["EDPR","ENGIE"],"technology":["offshore"],"region":"Baltic Sea","capacity":"390 MW","capacity_source":"https://www.oceanwinds.com/news/uncategorized/ocean-winds-has-reached-financial-close-for-its-bc-wind-project-in-poland/","asset_tags":["BC-Wind"],"aliases":["BC-Wind","BC Wind"],"context":[],"exclude_any":[]},"zarnowiec-bess":{"name":"Żarnowiec BESS","owners":["PGE"],"partners":["LG Energy Solution Wrocław"],"technology":["bess"],"region":"Pomerania","capacity":"262 MW / ~981 MWh","capacity_source":"https://www.gkpge.pl/en/for-investors/current-reports/signing-of-the-agreement-for-construction-of-an-energy-storage-facility-in-zarnowiec","asset_tags":["Żarnowiec BESS"],"aliases":["Żarnowiec BESS","BESS Żarnowiec","Zarnowiec battery","Żarnowiec battery"],"context":[{"term":"Żarnowiec","requires_any":["battery","BESS","energy storage","storage facility","magazyn"],"excludes_any":["pumped-storage upgrade","nuclear"]}],"exclude_any":[]},"grudziadz-ccgt":{"name":"Grudziądz CCGT (unit 1)","owners":["Energa","ORLEN"],"partners":["Siemens Energy","Mytilineos"],"technology":["gas"],"region":"Kuyavia-Pomerania","capacity":"560 MW","capacity_source":"https://www.orlen.pl/en/about-the-company/media/press-releases/archive/2023/May-2023/ORLEN-Group-invests-in-advanced-and-stable-power-generation","asset_tags":["Grudziądz CCGT"],"aliases":["CCGT Grudziądz","Grudziądz CCGT","CCGT Grudziądz 1","Grudziądz 1"],"context":[],"exclude_any":["BESS","battery","magazyn","second gas-steam","Grudziądz II","Grudziądz 2","second unit"]},"grudziadz-ccgt-2":{"name":"Grudziądz CCGT (unit 2)","owners":["Energa","ORLEN"],"partners":["Siemens Energy"],"technology":["gas"],"region":"Kuyavia-Pomerania","capacity":"560 MW","capacity_source":"https://ir.energa.pl/en/pr/857741/conclusion-of-an-agreement-with-the-general-contractor-for-the-construction-of-the-second-gas-steam-unit-ccgt-in-grudziadz","asset_tags":[],"aliases":["Grudziądz II","CCGT Grudziądz 2","Grudziądz 2"],"context":[{"term":"Grudziądz","requires_any":["second gas-steam","second CCGT","second unit"],"excludes_any":["BESS","battery"]}],"exclude_any":[]},"grudziadz-bess":{"name":"Grudziądz BESS","owners":["Energa","ORLEN"],"partners":[],"technology":["bess"],"region":"Kuyavia-Pomerania","capacity":"47 MW","capacity_source":"https://energastorage.pl/ogloszenie-przetargu-nr-PKN_2_003357_26","asset_tags":["Grudziądz BESS"],"aliases":["BESS Grudziądz","Grudziądz BESS"],"context":[{"term":"Grudziądz","requires_any":["battery","BESS","magazyn"],"excludes_any":["CCGT","gas-steam"]}],"exclude_any":[]},"ostroleka-ccgt":{"name":"Ostrołęka CCGT","owners":["Energa","ORLEN"],"partners":["GE Vernova"],"technology":["gas"],"region":"Masovia","capacity":"745 MWe (net) per Energa current report","capacity_source":"https://ir.energa.pl/en/pr/821106/changes-regarding-the-implementation-of-construction-project-of-ccgt-power-plant-in-ostroleka","asset_tags":["Ostrołęka CCGT"],"aliases":["Ostrołęka CCGT","CCGT Ostrołęka","Ostrołęka"],"context":[],"exclude_any":[]},"kozienice-ccgt":{"name":"Kozienice CCGT","owners":["Enea"],"partners":["Çalık Enerji"],"technology":["gas"],"region":"Masovia","capacity":"2 × 668 MWe = 1,336 MWe","capacity_source":"https://ir.enea.pl/en/pr/862404/nearly-pln-6-5-billion-in-syndicated-loan-for-enea-for-the-constrution-of-combined-cycle-gas-turbine-units-in-kozienice","asset_tags":["Kozienice CCGT"],"aliases":["Kozienice CCGT","CCGT Kozienice","Enea Elkogaz","Elkogaz"],"context":[{"term":"Kozienice","requires_any":["CCGT","gas-steam","gazowo-parow","gas investment","gazow","668 MW","1,336 MW"],"excludes_any":["battery","BESS","storage","magazyn","coal","węgl","drought"]}],"exclude_any":[]},"kozienice-bess":{"name":"Kozienice BESS (DRI / Actis, 112 MW)","owners":["Actis"],"partners":["DRI","Greenvolt"],"technology":["bess"],"region":"Masovia","capacity":"112 MW / 518 MWh (Actis) — 448 MWh per DRI","capacity_source":"https://www.act.is/2026/10/06/actis-adds-244mw-1141mwh-battery-storage-portfolio-to-polish-platform-within-three-months-of-launch/","asset_tags":["Kozienice BESS (DRI / Actis, 112 MW)"],"aliases":[],"context":[{"term":"Kozienice","requires_any":["battery","BESS","energy storage","magazyn"],"excludes_any":["CCGT","gas-steam","232 MW","Enea plans"]}],"exclude_any":[]},"jaworzno-ocgt":{"name":"Jaworzno OCGT","owners":["TAURON"],"partners":["Ansaldo Energia"],"technology":["gas"],"region":"Silesia","capacity":"~600 MWe (2 × 314.6 MW turbines)","capacity_source":"https://media.tauron.pl/pr/862141/tauron-wybuduje-jednostke-szczytowa-typu-ocgt-w-jaworznie-ze-wsparciem-z-rynku-mocy","asset_tags":["Jaworzno OCGT"],"aliases":["Jaworzno OCGT","OCGT Jaworzno"],"context":[{"term":"Jaworzno","requires_any":["OCGT","peaking","peaker","szczytow","open-cycle","turbine island","gas turbines","turbin gazowych"],"excludes_any":["910 MW","heat source","źródło ciepła","źródła ciepła"]}],"exclude_any":[]},"rybnik-ocgt":{"name":"Rybnik OCGT","owners":["PGE"],"partners":["Polimex Mostostal","Siemens Energy"],"technology":["gas"],"region":"Silesia","capacity":"~588–600 MWe","capacity_source":"https://www.gkpge.pl/en/for-investors/current-reports/signing-of-the-agreements-for-construction-of-the-gas-fired-units-in-rybnik-and-in-gryfino","asset_tags":["Rybnik OCGT"],"aliases":["Rybnik OCGT"],"context":[{"term":"Rybnik","requires_any":["OCGT","peaking","peaker","szczytow","open-cycle","gas-fired"],"excludes_any":[]}],"exclude_any":[]},"gryfino-ocgt":{"name":"Gryfino OCGT","owners":["PGE"],"partners":["Polimex Mostostal","Siemens Energy"],"technology":["gas"],"region":"West Pomerania","capacity":"~588 MW","capacity_source":"https://www.gkpge.pl/grupa-pge/dla-mediow/komunikaty-prasowe/korporacyjne/pge-wybrala-wykonawce-szczytowych-elektrowni-gazowych-w-rybniku-oraz-gryfinie","asset_tags":["Gryfino OCGT"],"aliases":["Gryfino OCGT"],"context":[{"term":"Gryfino","requires_any":["OCGT","peaking","peaker","szczytow","open-cycle"],"excludes_any":["Dolna Odra","1,366","BESS","battery"]}],"exclude_any":[]},"gdansk-ccgt":{"name":"Gdańsk CCGT","owners":["Energa","ORLEN"],"partners":["Polimex Mostostal","Siemens Energy"],"technology":["gas"],"region":"Pomerania","capacity":"560 MW","capacity_source":"https://www.wnp.pl/energia/orlen-rusza-z-budowa-bloku-parowo-gazowego-w-gdansku,1010591.html","asset_tags":["Gdańsk CCGT"],"aliases":["Gdańsk CCGT","CCGT Gdańsk"],"context":[{"term":"Gdańsk","requires_any":["CCGT","gas-steam","parowo-gazow","gazowo-parow","combined-cycle"],"excludes_any":["LNG","FSRU","terminal","port","T5"]}],"exclude_any":[]},"wloclawek-smr":{"name":"Włocławek SMR","owners":["ORLEN","OSGE"],"partners":["GE Vernova Hitachi"],"technology":["nuclear"],"region":"Kuyavia-Pomerania","capacity":"Up to 6 × BWRX-300 (300 MWe each) = up to 1,800 MWe","capacity_source":"https://www.world-nuclear-news.org/articles/osge-signs-agreement-with-wloclawek-for-smr-plant","asset_tags":["Włocławek SMR"],"aliases":["Włocławek SMR"],"context":[{"term":"Włocławek","requires_any":["SMR","BWRX","nuclear","jądrow","reactor"],"excludes_any":[]}],"exclude_any":[]},"patnow-smr":{"name":"Pątnów SMR","owners":["ZE PAK"],"partners":[],"technology":["nuclear"],"region":"Greater Poland","capacity":"Up to 6 × BWRX-300 (300 MWe each) = up to 1,800 MWe","capacity_source":"https://www.world-nuclear-news.org/articles/joint-venture-formed-for-six-unit-smr-plant-in-poland","asset_tags":["Pątnów SMR"],"aliases":["Pątnów SMR"],"context":[{"term":"Pątnów","requires_any":["SMR","BWRX","nuclear","jądrow"],"excludes_any":[]}],"exclude_any":[]},"second-npp":{"name":"Second NPP (Bełchatów / Konin sites)","owners":["PEJ","PGE"],"partners":[],"technology":["nuclear"],"region":"Łódź · Greater Poland","capacity":"Not yet stated","capacity_source":"","asset_tags":["Second NPP (Bełchatów / Konin sites)"],"aliases":["second nuclear power plant","second nuclear plant","second Polish nuclear","second nuclear power station","EJ2","druga elektrownia jądrowa","drugiej elektrowni jądrowej"],"context":[],"exclude_any":[]},"harmony-link":{"name":"Harmony Link","owners":["PSE","Litgrid"],"partners":[],"technology":["grid"],"region":"Podlaskie · Lithuania","capacity":"220 kV interconnector","capacity_source":"https://litgrid.eu/en/news/litgrid-and-pse-signed-connection-point-agreement-for-the-harmony-link-lithuania-poland-electricity-interconnector","asset_tags":["Harmony Link"],"aliases":["Harmony Link"],"context":[],"exclude_any":[]}},"curated":{"a4":{"project_ids":["lubiatowo-kopalino-npp"],"display_title":"European Commission opens in-depth State-aid probe into support for Poland’s first nuclear plant","milestones":{"lubiatowo-kopalino-npp":{"stage":"AUC","text":"European Commission opens in-depth State-aid investigation into the support package","confidence":"high"}}},"a5":{"project_ids":["lubiatowo-kopalino-npp"],"display_title":"GDOŚ upholds environmental decision for the Lubiatowo-Kopalino nuclear plant","milestones":{"lubiatowo-kopalino-npp":{"stage":"PERM","text":"GDOŚ upholds the environmental decision","confidence":"high"}}},"nu5":{"project_ids":["lubiatowo-kopalino-npp"],"milestones":{"lubiatowo-kopalino-npp":{"stage":"FIN","text":"US EXIM signs first credit agreement with PEJ for design and engineering services","confidence":"high"}}},"nu3":{"project_ids":["lubiatowo-kopalino-npp"],"milestones":{"lubiatowo-kopalino-npp":{"stage":"PERM","text":"PEJ files the construction-licence application with the PAA","confidence":"high"}}},"nu4":{"project_ids":["lubiatowo-kopalino-npp"],"milestones":{"lubiatowo-kopalino-npp":{"stage":"PERM","text":"PAA confirms the site is suitable for the plant","confidence":"high"}}},"nu2":{"project_ids":["lubiatowo-kopalino-npp"],"display_title":"PEJ hands the Lubiatowo-Kopalino site to Bechtel as earthworks begin","milestones":{"lubiatowo-kopalino-npp":{"stage":"CON","text":"Site handed to Bechtel and earthworks begin","confidence":"high"}}},"u5":{"project_ids":["lubiatowo-kopalino-npp"],"display_title":"PEJ and Westinghouse-Bechtel agree main EPC commercial terms for the first Polish nuclear plant","milestones":{"lubiatowo-kopalino-npp":{"stage":"PROC","text":"PEJ and Westinghouse-Bechtel agree main EPC commercial terms","confidence":"high"}}},"u4":{"project_ids":["lubiatowo-kopalino-npp","second-npp"],"milestones":{"lubiatowo-kopalino-npp":{"stage":"DELAY","text":"Updated nuclear programme sets 2036 for the first unit","confidence":"medium","milestone_date":"2026-09-29","date_basis":"stated"},"second-npp":{"stage":"PLAN","text":"Updated nuclear programme: partner selection 2027, first power around 2040","confidence":"medium","milestone_date":"2026-09-29","date_basis":"stated"}}},"nu1":{"project_ids":["lubiatowo-kopalino-npp"],"display_title":"PEJ starts long-lead procurement for the first Lubiatowo-Kopalino AP1000 unit","milestones":{"lubiatowo-kopalino-npp":{"stage":"PROC","text":"Long-lead procurement begins for the first AP1000 unit","confidence":"high"}}},"o2":{"project_ids":["lubiatowo-kopalino-npp"],"display_title":"Westinghouse places conditional module orders with four Polish suppliers for the first AP1000 unit","milestones":{"lubiatowo-kopalino-npp":{"stage":"PROC","text":"Conditional purchase orders placed with four Polish suppliers for structural modules","confidence":"high"}}},"v2":{"project_ids":["lubiatowo-kopalino-npp"],"milestones":{"lubiatowo-kopalino-npp":{"is_milestone":false,"reason":"Planned permit application; no application or decision reported yet"}}},"rg1":{"project_ids":["lubiatowo-kopalino-npp"],"milestones":{"lubiatowo-kopalino-npp":{"is_milestone":false,"reason":"National law amendment; related coverage, not a project milestone"}}},"h1":{"project_ids":["baltic-power"],"display_title":"Baltic Power to use low-emission steel in 52 of its 76 turbine towers","milestones":{"baltic-power":{"stage":"PROC","text":"Low-emission steel selected for 52 of the 76 turbine towers","confidence":"medium"}}},"h18":{"project_ids":["baltic-power"],"display_title":"Baltic Power delivers first offshore wind power to the Polish grid","milestones":{"baltic-power":{"stage":"COM","text":"First power delivered to the grid; PSE confirms receipt at Choczewo","confidence":"high"}}},"h19":{"project_ids":["baltic-power"],"display_title":"Baltic Power completes installation of all 76 turbines","milestones":{"baltic-power":{"stage":"CON","text":"Installation of all 76 turbines completed","confidence":"high"}}},"ic2":{"project_ids":["baltyk-2-3"],"display_title":"Heerema contracted to transport and install Bałtyk 2 and 3 foundations","milestones":{"baltyk-2-3":{"stage":"PROC","text":"Heerema contracted to transport and install 100 monopiles and substation foundations","confidence":"high"}}},"ic7":{"project_ids":["baltyk-2-3"],"display_title":"Polenergia and Equinor take final investment decisions on Bałtyk 2 and 3","milestones":{"baltyk-2-3":{"stage":"FIN","text":"Final investment decisions taken on Bałtyk 2 and 3","confidence":"high"}}},"ic8":{"project_ids":["baltyk-2-3"],"display_title":"Bałtyk 2 and 3 reach financial close with over €6bn of project finance","milestones":{"baltyk-2-3":{"stage":"FIN","text":"Financial close with over €6bn of project finance","confidence":"high"}}},"ic13":{"project_ids":["baltyk-2-3"],"display_title":"Offshore construction starts at Bałtyk 2 and 3","milestones":{"baltyk-2-3":{"stage":"CON","text":"Offshore construction starts with seabed rock placement","confidence":"medium"}}},"ic15":{"project_ids":["baltyk-2-3"],"display_title":"Bałtyk 2 and 3 complete first seabed rock phase as onshore transformers arrive","milestones":{"baltyk-2-3":{"stage":"CON","text":"First rock-placement phase complete; onshore transformers delivered; tower production started","confidence":"high"}}},"a6":{"project_ids":["baltica-2"],"display_title":"PGE and Ørsted take FID on the 1.5 GW Baltica 2 offshore wind farm","milestones":{"baltica-2":{"stage":"FIN","text":"Final investment decision taken; budget about PLN 30bn","confidence":"high"}}},"n24":{"project_ids":["baltica-2"],"milestones":{"baltica-2":{"stage":"CON","text":"Offshore installation begins with Van Oord’s monopile campaign","confidence":"high"}}},"n34":{"project_ids":["baltica-2"],"milestones":{"baltica-2":{"stage":"CON","text":"All 111 monopile foundations installed","confidence":"high"}}},"y4":{"project_ids":["baltica-2"],"milestones":{"baltica-2":{"is_milestone":false,"reason":"Port terminal opening; the article states it will serve Baltica 2 in future"}}},"ic16":{"project_ids":["baltica-2","baltica-9"],"milestones":{"baltica-2":{"is_milestone":false,"reason":"Feature article; no new project decision"},"baltica-9":{"is_milestone":false,"reason":"Feature article; no new project decision"}}},"a7":{"project_ids":["baltyk-1","baltic-east","baltica-9"],"display_title":"Three offshore wind projects win 3.435 GW of 25-year CfDs in Poland’s first auction","milestones":{"baltyk-1":{"stage":"AUC","text":"Wins a 25-year CfD in the first offshore wind auction","confidence":"high"},"baltic-east":{"stage":"AUC","text":"Wins a 25-year CfD in the first offshore wind auction (900 MW)","confidence":"high"},"baltica-9":{"stage":"AUC","text":"Baltica 9 wins a 25-year CfD in the first offshore wind auction (975 MW)","confidence":"high"}}},"ic1":{"project_ids":["baltyk-1"],"display_title":"Bałtyk 1 applies for environmental approval for its grid connection ahead of the auction","milestones":{"baltyk-1":{"stage":"PERM","text":"Environmental approval sought for the grid-connection infrastructure","confidence":"high"}}},"ic11":{"project_ids":["baltyk-1"],"display_title":"Bałtyk 1 wins CfD at PLN 492.32/MWh in the offshore wind auction","milestones":{"baltyk-1":{"stage":"AUC","text":"Wins a 25-year CfD at PLN 492.32/MWh","confidence":"high"}}},"ic12":{"project_ids":["baltica-9"],"display_title":"RWE agrees to sell the 350 MW F.E.W. Baltic II project to PGE","milestones":{"baltica-9":{"stage":"OWN","text":"RWE agrees to sell F.E.W. Baltic II (350 MW) to PGE","confidence":"high"}}},"ic14":{"project_ids":["baltica-9"],"display_title":"RWE completes sale of F.E.W. Baltic II to PGE","milestones":{"baltica-9":{"stage":"OWN","text":"Sale of F.E.W. Baltic II to PGE completed","confidence":"high"}}},"ic10":{"project_ids":["bc-wind"],"display_title":"Ocean Winds reaches ~€2bn financial close for the 390 MW BC-Wind project","milestones":{"bc-wind":{"stage":"FIN","text":"Financial close with about €2bn of project finance","confidence":"high"}}},"h5":{"project_ids":["zarnowiec-bess"],"display_title":"PGE plans a 263 MW / 900+ MWh battery at Żarnowiec","milestones":{"zarnowiec-bess":{"stage":"PLAN","text":"PGE announces a 263 MW / 900+ MWh battery plan","confidence":"medium"}}},"h13":{"project_ids":["zarnowiec-bess"],"display_title":"PGE signs PLN 1.555bn EPC with LG Energy Solution Wrocław for Żarnowiec BESS","milestones":{"zarnowiec-bess":{"stage":"PROC","text":"Turnkey EPC signed with LG Energy Solution Wrocław (PLN 1.555bn gross)","confidence":"high"}}},"h16":{"project_ids":["zarnowiec-bess"],"display_title":"Construction starts on PGE’s 263 MW Żarnowiec battery","milestones":{"zarnowiec-bess":{"stage":"CON","text":"Construction starts","confidence":"high"}}},"b1":{"project_ids":["zarnowiec-bess"],"milestones":{"zarnowiec-bess":{"stage":"CON","text":"Battery reported near commissioning","confidence":"medium"}}},"h3":{"project_ids":["grudziadz-ccgt"],"display_title":"Gas turbine delivered to the Grudziądz CCGT site","milestones":{"grudziadz-ccgt":{"stage":"CON","text":"300-tonne gas turbine delivered to site; progress above 70%","confidence":"high"}}},"h7":{"project_ids":["grudziadz-ccgt"],"display_title":"Turbine-unit installation starts at Grudziądz CCGT","milestones":{"grudziadz-ccgt":{"stage":"CON","text":"Turbine-unit installation begins; progress near 80%","confidence":"high"}}},"n11":{"project_ids":["grudziadz-ccgt","ostroleka-ccgt"],"milestones":{"grudziadz-ccgt":{"stage":"DELAY","text":"Contractual operational milestone missed","confidence":"high"},"ostroleka-ccgt":{"stage":"DELAY","text":"Contractual operational milestone missed","confidence":"high"}}},"n10":{"project_ids":["grudziadz-ccgt"],"milestones":{"grudziadz-ccgt":{"stage":"COM","text":"First electricity delivered to the national grid","confidence":"high"}}},"h15":{"project_ids":["grudziadz-ccgt-2"],"display_title":"Energa signs PLN 3.1bn EPC with Siemens Energy for a second Grudziądz CCGT unit","milestones":{"grudziadz-ccgt-2":{"stage":"PROC","text":"PLN 3.1bn turnkey EPC signed with Siemens Energy","confidence":"high"}}},"b3":{"project_ids":["grudziadz-bess"],"milestones":{"grudziadz-bess":{"stage":"PROC","text":"EMS/SCADA integrator tender launched","confidence":"high"}}},"h11":{"project_ids":["ostroleka-ccgt"],"milestones":{"ostroleka-ccgt":{"stage":"CON","text":"Turbine set and heat-recovery steam generator installed during 2024","confidence":"medium"}}},"h17":{"project_ids":["ostroleka-ccgt"],"display_title":"Cold commissioning starts at Ostrołęka CCGT","milestones":{"ostroleka-ccgt":{"stage":"COM","text":"Cold commissioning starts after 110 kV energisation","confidence":"high"}}},"e4":{"project_ids":["ostroleka-ccgt"],"milestones":{"ostroleka-ccgt":{"stage":"DELAY","text":"Contract annex resets the operational milestone to March 2027","confidence":"high"}}},"n9":{"project_ids":["kozienice-ccgt"],"milestones":{"kozienice-ccgt":{"stage":"FIN","text":"PLN 6.95bn project financing secured","confidence":"medium"}}},"n8":{"project_ids":["kozienice-ccgt"],"milestones":{"kozienice-ccgt":{"stage":"CON","text":"Construction starts with Çalık Enerji","confidence":"high"}}},"m7":{"project_ids":["kozienice-bess"],"milestones":{"kozienice-bess":{"stage":"OWN","text":"DRI acquires the ready-to-build project from Greenvolt","confidence":"high"}}},"o5":{"project_ids":["kozienice-bess"],"milestones":{"kozienice-bess":{"stage":"OWN","text":"Actis acquires the project from DRI","confidence":"high"}}},"n6":{"project_ids":["jaworzno-ocgt"],"milestones":{"jaworzno-ocgt":{"stage":"FIN","text":"TAURON decides to build after winning a 15-year capacity contract","confidence":"high"}}},"n32":{"project_ids":["jaworzno-ocgt"],"display_title":"TAURON signs €293m Ansaldo Energia contract for the Jaworzno OCGT turbine island","milestones":{"jaworzno-ocgt":{"stage":"PROC","text":"€293m turbine-island contract signed with Ansaldo Energia","confidence":"high"}}},"n2":{"project_ids":["rybnik-ocgt"],"milestones":{"rybnik-ocgt":{"stage":"PROC","text":"Turnkey procurement launched for a ~600 MW peaking plant","confidence":"medium"}}},"n3":{"project_ids":["rybnik-ocgt","gryfino-ocgt"],"milestones":{"rybnik-ocgt":{"stage":"PROC","text":"Polimex-Mostostal–Siemens Energy consortium selected as contractor","confidence":"high"},"gryfino-ocgt":{"stage":"PROC","text":"Polimex-Mostostal–Siemens Energy consortium selected as contractor","confidence":"high"}}},"n20":{"project_ids":["rybnik-ocgt","gryfino-ocgt"],"milestones":{"rybnik-ocgt":{"stage":"PROC","text":"EPC and 12-year service contracts signed","confidence":"high"},"gryfino-ocgt":{"stage":"PROC","text":"EPC and service contracts signed on the same structure as Rybnik","confidence":"medium"}}},"n35":{"project_ids":["gdansk-ccgt"],"milestones":{"gdansk-ccgt":{"stage":"CON","text":"Construction under way with Polimex-Mostostal and Siemens Energy on site","confidence":"medium"}}},"w3":{"project_ids":["gdansk-ccgt"],"milestones":{"gdansk-ccgt":{"stage":"CON","text":"Foundation slabs for the main equipment completed","confidence":"high"}}},"h14":{"project_ids":["wloclawek-smr"],"display_title":"ORLEN and Synthos reset OSGE governance and name Włocławek the first BWRX-300 site","milestones":{"wloclawek-smr":{"stage":"PLAN","text":"Włocławek designated the first BWRX-300 project site","confidence":"high"}}},"nu7":{"project_ids":["wloclawek-smr"],"milestones":{"wloclawek-smr":{"stage":"PLAN","text":"Cooperation agreement signed with the City of Włocławek for up to six units","confidence":"high"}}},"nu6":{"project_ids":["wloclawek-smr"],"milestones":{"wloclawek-smr":{"stage":"AUC","text":"CfD application filed for 14 BWRX-300 units, including Włocławek","confidence":"high"}}},"w2":{"project_ids":["wloclawek-smr"],"milestones":{"wloclawek-smr":{"stage":"OWN","text":"ORLEN to lead the project under a new OSGE framework","confidence":"high"}}},"h20":{"project_ids":["patnow-smr"],"display_title":"ZE PAK concludes shareholders’ agreement for the Pątnów SMR project","milestones":{"patnow-smr":{"stage":"OWN","text":"Shareholders’ agreement concluded for the project","confidence":"medium"}}},"o1":{"project_ids":["second-npp"],"milestones":{"second-npp":{"stage":"PLAN","text":"Roles agreed: PEJ as investor, PGE leads siting (Bełchatów / Konin)","confidence":"high"}}},"o3":{"project_ids":["harmony-link"],"milestones":{"harmony-link":{"stage":"PROC","text":"PSE and Litgrid sign the connection-point agreement","confidence":"high"}}}}}/*PPP_CONFIG_END*/;
+  /* ═══════════════════════════════════════════════════════════════════════════════════════════════════ */
+
+  /* ---------- text helpers ---------- */
+  const foldBase = t => String(t == null ? '' : t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/ł/g, 'l').replace(/ø/g, 'o').replace(/ß/g, 'ss').replace(/æ/g, 'ae');
+  const fold = t => foldBase(t).replace(/[^a-z0-9]+/g, ' ').trim();
+  const reEsc = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const wc = t => String(t || '').trim().split(/\s+/).filter(Boolean).length;
+  const wset = t => new Set(fold(t).split(' ').filter(w => w.length > 2));
+  const jac = (a, b) => { const A = wset(a), B = wset(b); let i = 0; A.forEach(x => { if (B.has(x)) i++; }); return i / Math.max(1, A.size + B.size - i); };
+  const days = (a, b) => Math.abs(Date.parse(a) - Date.parse(b)) / 86400000;
+  const cleanTxt = t => (W.__ground && W.__ground.clean) ? W.__ground.clean(t) : String(t || '').replace(/\s+/g, ' ').trim();
+  const splitS = t => (W.__ground && W.__ground.split) ? W.__ground.split(t) : String(t || '').split(/(?<=[.!?])\s+/).filter(Boolean);
+  const host = u => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return ''; } };
+  const firstUrl = s => s.src_url || ((s.links || [])[0] || {}).url || '';
+
+  /* term → regex source on folded text; "*" at the end of a word = any ending (Polish inflection) */
+  function termSrc(term){
+    const parts = foldBase(term).split(/\s+/).filter(Boolean);
+    const out = []; let lastWild = false;
+    parts.forEach(p => { const wild = /\*$/.test(p); const base = fold(p.replace(/\*+$/, '')); if (!base) return;
+      out.push(base.split(' ').map(reEsc).join('\\s+') + (wild ? '[a-z0-9]*' : '')); lastWild = wild; });
+    return {src: out.join('\\s+'), n: out.length, wild: lastWild};
+  }
+  const wordRe = (term, prefix) => { const t = termSrc(term); if (!t.src) return null;
+    return new RegExp('(?:^|\\s)' + t.src + (prefix || t.wild ? '' : '(?=\\s|$)')); };
+
+  /* v109: full project names and 3–5 line project summaries (Project Milestones view) */
+  const PT_FULL_NAME = {"lubiatowo-kopalino-npp": "Lubiatowo-Kopalino Nuclear Power Plant (3 × AP1000)", "baltic-power": "Baltic Power", "baltyk-2-3": "Bałtyk 2 & 3", "baltyk-1": "Bałtyk 1", "baltica-2": "Baltica 2", "baltica-9": "Baltica 9 / F.E.W. Baltic II", "baltic-east": "Baltic East", "bc-wind": "BC-Wind", "zarnowiec-bess": "Żarnowiec Battery Energy Storage System", "grudziadz-ccgt": "Grudziądz CCGT (Unit 1)", "grudziadz-ccgt-2": "Grudziądz CCGT (Unit 2)", "grudziadz-bess": "Grudziądz Battery Energy Storage System", "ostroleka-ccgt": "Ostrołęka CCGT", "kozienice-ccgt": "Kozienice CCGT", "kozienice-bess": "Kozienice Battery Energy Storage System (DRI / Actis, 112 MW)", "jaworzno-ocgt": "Jaworzno OCGT", "rybnik-ocgt": "Rybnik OCGT", "gryfino-ocgt": "Gryfino OCGT", "gdansk-ccgt": "Gdańsk CCGT", "wloclawek-smr": "Włocławek Small Modular Reactor Plant (BWRX-300)", "patnow-smr": "Pątnów Small Modular Reactor Plant (BWRX-300)", "second-npp": "Second Polish Nuclear Power Plant (Bełchatów / Konin sites)", "harmony-link": "Harmony Link Lithuania–Poland Electricity Interconnector"};
+  const PT_SUMMARY = {"gryfino-ocgt": "PGE’s ~588 MW open-cycle gas peaking plant at Gryfino, West Pomerania, is one of two OCGT peakers PGE is developing alongside Rybnik as back-up capacity for renewables. Both units hold 15-year capacity-market contracts. In January 2026 PGE selected a Polimex-Mostostal and Siemens Energy consortium, the sole bidder, as contractor, and in March 2026 EPC and service contracts were signed on the same structure as Rybnik.", "rybnik-ocgt": "PGE’s ~600 MWe open-cycle gas peaking plant at Rybnik, Silesia, part of PGE’s plan for 10 GW of new gas capacity, of which 6 GW in open-cycle units. PGE launched turnkey procurement in August 2025 and selected Polimex-Mostostal and Siemens Energy in January 2026. In March 2026 it signed EPC and 12-year service contracts worth PLN 1.17bn plus €269.5m net, with commissioning due by 16 January 2030 under a 15-year capacity contract.", "lubiatowo-kopalino-npp": "Poland’s first nuclear power plant, developed by state-owned PEJ in Pomerania with three Westinghouse AP1000 units (3,750 MWe) and a Westinghouse-Bechtel EPC consortium. The European Commission opened an in-depth State-aid investigation into the ~€45bn support package in December 2024. Since then the environmental decision has been upheld, the construction-licence application filed, site suitability confirmed, earthworks started, main EPC terms agreed and long-lead procurement begun. The updated nuclear programme targets the first unit in 2036.", "baltic-power": "ORLEN and Northland Power’s 1.14 GW offshore wind farm, Poland’s first, built with 76 Vestas 15 MW turbines. It delivered first power to the Polish grid in July 2026 and completed installation of all 76 turbines in October 2026. Commercial operation is on track for 2026 under a 25-year contract for difference, and at full output the farm will produce about 4 TWh a year, roughly 3% of Polish demand.", "baltyk-2-3": "Polenergia and Equinor’s two 720 MW offshore wind farms (1,440 MW in total) in the Baltic Sea. Heerema was contracted in 2024 to install the foundations, and final investment decisions and financial close of over €6bn followed in May 2025. Offshore construction began in February 2026 with seabed rock placement; by end-Q1 2026 the first rock phase was complete and onshore transformers had arrived. First power is expected in 2027 and commissioning in 2028.", "baltyk-1": "Polenergia and Equinor’s up-to-1,560 MW offshore wind project, about 80 km offshore, with a cable permit and a PSE grid connection agreement. It applied for environmental approval for its grid-connection infrastructure in 2024. In December 2025 it won a 25-year CfD at PLN 492.32/MWh in Poland’s first competitive offshore wind auction, with first power required within seven years of the auction.", "baltica-2": "PGE and Ørsted’s ~1.5 GW offshore wind farm on the Słupsk Bank, using Siemens Gamesa 14 MW turbines. The partners took the final investment decision in January 2025 on a budget of about PLN 30bn. Offshore installation started in May 2026, and Van Oord completed all 111 monopile foundations on schedule in August 2026. Commissioning is targeted for end-2027.", "baltica-9": "PGE’s combined offshore wind development of Baltica 9 (975 MW) and the 350 MW F.E.W. Baltic II site north of Ustka. Baltica 9 won a 25-year CfD in Poland’s first offshore wind auction in December 2025. RWE agreed to sell F.E.W. Baltic II to PGE the same month and completed the sale in March 2026, making PGE sole owner of a combined project of around 1.3 GW.", "baltic-east": "ORLEN’s 900 MW offshore wind project in the Baltic Sea. In December 2025 it won a 25-year two-way contract for difference in URE’s first competitive offshore wind auction, alongside Baltica 9 and Bałtyk 1. Strike prices in the auction ranged from PLN 476.88 to 492.32/MWh, and first power is required within seven years.", "bc-wind": "Ocean Winds’ 390 MW BC-Wind offshore wind farm; Ocean Winds is the EDPR–ENGIE joint venture. In December 2025 the project reached financial close with about €2bn of project finance from the EIB (about one third), ICO and 13 commercial banks. Construction is under way, including an operations base in Władysławowo, and first power is expected in 2028.", "zarnowiec-bess": "PGE’s 262 MW / ~981 MWh battery beside the Żarnowiec pumped-storage plant in Pomerania, set to become Poland’s largest battery. PGE announced the plan in 2024, signed a PLN 1.555bn gross EPC with LG Energy Solution Wrocław in March 2025 and started construction in September 2025. The battery holds a 17-year capacity-market contract from 2029 and was reported near commissioning in July 2026, ahead of its 30 April 2027 contractual date.", "grudziadz-ccgt": "Energa’s (ORLEN Group) 560 MW combined-cycle gas unit at Grudziądz, built by a Siemens Energy–Mytilineos consortium and designed to supply up to one million households. The gas turbine arrived on site in April 2024 and turbine-unit installation began in July 2024. The contractual operational milestone was missed at end-2025; the unit delivered first electricity to the grid in July 2026 and entered final commissioning.", "grudziadz-ccgt-2": "A second 560 MW single-shaft combined-cycle gas unit at Grudziądz, developed by Energa (ORLEN Group). In September 2025 Energa signed a turnkey contract worth about PLN 3.1bn with Siemens Energy, plus a service agreement of up to 20 years. Commissioning is planned for 2029, backed by a 17-year capacity-market contract for 525 MW that could bring about PLN 4.8bn of revenue.", "grudziadz-bess": "Energa Storage’s 47 MW battery energy storage project at Grudziądz, part of the ORLEN Group storage build-out. In September 2026 Energa Storage launched a tender for an EMS/SCADA integrator, with bids due on 23 September 2026. It also re-ran a contractor tender for 13 PV and storage projects co-funded by the Modernisation Fund.", "ostroleka-ccgt": "Energa’s (ORLEN Group) combined-cycle gas plant at Ostrołęka, rated 745 MWe net (764 MW per Energa media), with GE as contractor. The turbine set and heat-recovery boiler were installed in 2024, and cold commissioning started in December 2025. After the contractual operational milestone was missed at end-2025, an April 2026 annex with GE reset it to March 2027, protecting the unit from capacity-market penalties.", "kozienice-ccgt": "Enea’s two 668 MW hydrogen-ready combined-cycle gas units (1,336 MW) at Kozienice, Masovia, one of Poland’s largest new gas investments. Project company Enea Elkogaz secured PLN 6.95bn of project financing in December 2025, and the project holds a 17-year capacity contract. Contractor Çalık Enerji took over the site in January 2026, with commissioning scheduled for March and June 2029.", "kozienice-bess": "A ready-to-build 112 MW battery storage project at Kozienice, Masovia, with permits and grid connection secured. DRI, DTEK’s EU renewables arm, bought it from Greenvolt in September 2025, and in October 2026 Actis acquired it as part of a 244 MW / 1,141 MWh portfolio. It holds a 17-year, inflation-indexed capacity-market contract; storage capacity is reported as 518 MWh by Actis and 448 MWh by DRI.", "jaworzno-ocgt": "TAURON’s ~600 MWe open-cycle gas peaking unit at Jaworzno, Silesia. TAURON decided to build it in December 2025 after winning at least 538 MW of 2030 capacity obligations under a 15-year contract worth up to PLN 4.13bn, with operation capped at an average 1,500 hours a year. In July 2026 it signed a €293m contract with Ansaldo Energia for two 314.6 MW gas turbines, with deliveries in late 2028 and 2029.", "gdansk-ccgt": "Energa’s (ORLEN Group) 560 MW combined-cycle gas plant in Gdańsk, built by a Polimex-Mostostal and Siemens Energy consortium and required to operate by 2029. Construction was advancing by December 2025. In October 2026 Energa completed the foundation slabs for the turbine-generator set and heat-recovery steam generator; turbines and generator are due on site in 2027.", "wloclawek-smr": "A planned BWRX-300 small modular reactor plant of up to six units (up to 1,800 MWe) at Włocławek. In August 2025 ORLEN and Synthos reset OSGE governance and named Włocławek the first project site. OSGE signed a cooperation agreement with the city in June 2026 and applied for a CfD covering 14 units across three sites. In October 2026 a new framework put ORLEN in charge of the Włocławek project.", "patnow-smr": "ZE PAK’s planned small modular reactor project at Pątnów, the site of its legacy lignite plant in Greater Poland, sized at up to six BWRX-300 units (up to 1,800 MWe). In October 2026 ZE PAK disclosed in an ESPI current report that it had concluded a shareholders’ agreement on delivering the project. Detailed terms, partners and timing are set out in the original filing.", "second-npp": "Poland’s planned second large nuclear power plant, with Bełchatów and Konin as preferred sites. In October 2026 the Ministry of Energy, PEJ and PGE agreed their roles: PEJ as investor and coordinator, PGE preparing site analyses and feasibility studies. The updated nuclear programme foresees partner selection in 2027, construction around 2032 and first power around 2040; capacity has not yet been stated.", "harmony-link": "A 220 kV electricity interconnector between Poland and Lithuania, the second link between the two systems, running from Ełk Bis to Gižai. In October 2026 PSE and Litgrid signed a connection-point agreement defining ownership, testing and connection responsibilities at the border. Lithuanian construction is due from Q2 2027, with commissioning targeted by end-2030."};
+  const PT_DEFAULT = 'gdansk-ccgt';
+  /* ═════════════ STATE built from configuration ═════════════ */
+  let ACR = {}, ACR_RE = /$^/gu, CONCEPTS = [], CTERMS = [], STAGES = [], STAGE = {}, PROJ = {}, CUR = {};
+  let IDXV = 1, lastRef = null, lastLen = -1;
+  function syncIdx(){ if (typeof SIGNALS !== 'undefined' && (SIGNALS !== lastRef || SIGNALS.length !== lastLen)) { lastRef = SIGNALS; lastLen = SIGNALS.length; IDXV++; } return IDXV; }
+  function applyConfig(){
+    const C = PPP_CONFIG;
+    /* acronyms */
+    ACR = {};
+    Object.entries(C.acronyms || {}).forEach(([k, v]) => { const d = Object.assign({key: k}, v); ACR[k] = d; (v.aliases || []).forEach(a => { ACR[a] = d; }); });
+    const keys = Object.keys(ACR).sort((a, b) => b.length - a.length).map(reEsc);
+    ACR_RE = keys.length ? new RegExp('(?<![\\p{L}\\p{N}_])(' + keys.join('|') + ')(s?)(?![\\p{L}\\p{N}_])', 'gu') : /$^/gu;
+    /* search concepts */
+    CONCEPTS = (C.concepts || []).map(c => ({id: c.id, rx: (c.terms || []).map(t => wordRe(t)).filter(Boolean)}));
+    CTERMS = [];
+    (C.concepts || []).forEach((c, gi) => (c.terms || []).forEach(t => { const s = termSrc(t); if (s.src) CTERMS.push({gi, n: s.n, anch: new RegExp('^' + s.src + '$')}); }));
+    QCACHE.clear();
+    /* stages */
+    STAGES = (C.stages || []).slice().sort((a, b) => a.order - b.order); STAGE = {}; STAGES.forEach(s => { STAGE[s.id] = s; });
+    /* projects */
+    PROJ = {};
+    Object.entries(C.projects || {}).forEach(([id, p0]) => {
+      const p = Object.assign({}, p0);
+      if (PT_FULL_NAME[id]) { p.short_name = p.short_name || p0.name; p.name = PT_FULL_NAME[id]; p.aliases = (p0.aliases || []).concat(p0.name); }
+      if (PT_SUMMARY[id] && !p.summary) p.summary = PT_SUMMARY[id];
+      PROJ[id] = Object.assign({}, p, {id,
+        _assets: new Set(p.asset_tags || []),
+        _al: (p.aliases || []).map(a => wordRe(a)).filter(Boolean),
+        _ctx: (p.context || []).map(c => ({re: wordRe(c.term), req: (c.requires_any || []).map(t => wordRe(t, true)).filter(Boolean), exc: (c.excludes_any || []).map(t => wordRe(t, true)).filter(Boolean)})).filter(c => c.re),
+        _exc: (p.exclude_any || []).map(t => wordRe(t, true)).filter(Boolean),
+        _hay: fold([p.name].concat(p.aliases || [], p.owners || [], p.partners || []).join(' '))});
+    });
+    CUR = (C.curated || {});
+    IDXV++; TL = null;
+  }
+
+  /* ═════════════ 1. ACRONYMS — markup + tooltip ═════════════ */
+  const acrExp = a => [a.pl, a.en].filter(Boolean).join(' — ');
+  function abbrTag(k, suffix, focus){
+    const a = ACR[k]; if (!a) return esc(k + (suffix || ''));
+    return `<abbr class="acr" data-acr="${esc(k)}"${focus ? ' tabindex="0"' : ''}>${esc(k)}<span class="vh"> (${esc(acrExp(a))})</span></abbr>${esc(suffix || '')}`;
+  }
+  /* raw text → safe HTML with acronyms wrapped. seen: Set of keys already made focusable in this container */
+  function acrHtml(raw, seen){
+    raw = String(raw == null ? '' : raw); let out = '', last = 0, m;
+    ACR_RE.lastIndex = 0;
+    while ((m = ACR_RE.exec(raw))) {
+      out += esc(raw.slice(last, m.index));
+      const focus = !!seen && !seen.has(ACR[m[1]].key); if (focus) seen.add(ACR[m[1]].key);
+      out += abbrTag(m[1], m[2], focus); last = m.index + m[0].length;
+    }
+    return out + esc(raw.slice(last));
+  }
+  const SKIP_TAGS = new Set(['A', 'ABBR', 'SCRIPT', 'STYLE', 'TEXTAREA', 'INPUT', 'SELECT', 'OPTION', 'BUTTON', 'SUP', 'CODE', 'TIME']);
+  /* wraps acronyms in text nodes only (never inside links, attributes, buttons or existing <abbr>) */
+  function acrWalk(root, focusable){
+    if (!root || !Object.keys(ACR).length) return;
+    const tw = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {acceptNode(n){
+      if (!n.nodeValue || n.nodeValue.length < 3) return NodeFilter.FILTER_REJECT;
+      for (let e = n.parentElement; e && e !== root.parentElement; e = e.parentElement) {
+        if (SKIP_TAGS.has(e.tagName) || e.classList.contains('vh') || e.hasAttribute('data-noacr') || e.tagName === 'FORM') return NodeFilter.FILTER_REJECT;
+      }
+      ACR_RE.lastIndex = 0; return ACR_RE.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT; }});
+    const nodes = []; while (tw.nextNode()) nodes.push(tw.currentNode);
+    const seenBy = new WeakMap();
+    nodes.forEach(n => {
+      const box = n.parentElement.closest('article,.pt-ms,.pt-proj,.pt-card,.nx-panel,.gsb-intro,.fsel') || root;
+      let seen = seenBy.get(box); if (!seen) { seen = new Set(); seenBy.set(box, seen); }
+      const span = document.createElement('span'); span.innerHTML = acrHtml(n.nodeValue, focusable ? seen : null);
+      const frag = document.createDocumentFragment(); while (span.firstChild) frag.appendChild(span.firstChild);
+      n.parentNode.replaceChild(frag, n);
+    });
+  }
+  /* one shared tooltip: mouse hover + keyboard focus; never intercepts clicks */
+  const tip = document.createElement('div'); tip.id = 'acr-tip'; tip.setAttribute('role', 'tooltip'); tip.hidden = true; document.body.appendChild(tip);
+  let tipFor = null;
+  function showTip(el){
+    const a = ACR[el.dataset.acr]; if (!a) return; tipFor = el;
+    tip.innerHTML = `<b>${esc(el.dataset.acr)}</b>${a.pl ? `<span lang="pl">${esc(a.pl)}</span>` : ''}<span>${esc(a.en || '')}</span>`;
+    tip.hidden = false; tip.style.left = '0px'; tip.style.top = '0px';
+    const r = el.getBoundingClientRect(), tw = tip.offsetWidth, th = tip.offsetHeight, vw = document.documentElement.clientWidth, vh = window.innerHeight;
+    let top = r.bottom + 6; if (top + th > vh - 6) top = Math.max(6, r.top - th - 6);
+    let left = r.left + r.width / 2 - tw / 2; left = Math.max(6, Math.min(left, vw - tw - 6));
+    tip.style.left = Math.round(left) + 'px'; tip.style.top = Math.round(top) + 'px';
+  }
+  function hideTip(){ tip.hidden = true; tipFor = null; }
+  document.addEventListener('mouseover', e => { const a = e.target.closest && e.target.closest('abbr.acr'); if (a) showTip(a); });
+  document.addEventListener('mouseout', e => { const a = e.target.closest && e.target.closest('abbr.acr'); if (a && (!e.relatedTarget || !a.contains(e.relatedTarget)) && tipFor === a && document.activeElement !== a) hideTip(); });
+  document.addEventListener('focusin', e => { const a = e.target.closest && e.target.closest('abbr.acr'); if (a) showTip(a); });
+  document.addEventListener('focusout', e => { if (tipFor && e.target === tipFor) hideTip(); });
+  window.addEventListener('scroll', () => { if (!tip.hidden) hideTip(); }, {passive: true, capture: true});
+
+  /* ═════════════ 2. HEADLINES & SUMMARIES (with fallbacks for older records) ═════════════ */
+  function ensureSrc(s){
+    if (!('src_title' in s)) { s.src_title = s.title_pl || s.title; s.src_en = s.title_pl ? s.title : ''; s.src_url = firstUrl(s) || '#'; s.in_feed = true; }
+    return s;
+  }
+  const hnorm = t => String(t || '').replace(/\s+/g, ' ').replace(/[‘’]/g, "'").trim().toLowerCase();
+  function hlFixOf(s){
+    if (s.hl_fix) return s.hl_fix;
+    const h = hnorm(s.src_title || s.title_pl || s.title);
+    const m = (W.HEADLINE_FIX || []).find(([o]) => h.includes(hnorm(o)));
+    return m ? m[1] : (s.title_clear || '');
+  }
+  const headlineLike = t => { t = String(t || '').trim(); const n = wc(t); return n >= 4 && n <= 16 && !/[.;:]$/.test(t); };
+  const tidyHead = t => String(t || '').replace(/[®™]/g, '').replace(/\s+/g, ' ').trim();
+  function displayTitle(s){
+    ensureSrc(s);
+    const c = CUR[s.id] || {};
+    let t = s.display_title || c.display_title || hlFixOf(s);
+    if (!t) {
+      if (s.auto) t = s.title || s.src_title;                                     /* live: EN headline / translation */
+      else if (s.title && s.title !== s.src_title) t = s.title;                    /* curated analyst rephrase or translation */
+      else if (headlineLike(s.change)) t = s.change;                               /* exact-at-source curated item */
+      else t = s.src_en || s.src_title || s.title;
+    }
+    return tidyHead(t);
+  }
+  /* summary: grounded text from the item; flags when only a source excerpt is available */
+  function summaryOf(s){
+    let txt = cleanTxt(s.summary || ''), flag = s.summary_status === 'needs_review' || s.summary_method === 'excerpt';
+    if (s.auto && !s.summary_method) flag = true;                                  /* live item not yet summarised by the enrichment step */
+    if (wc(txt) < 25) { const ex = cleanTxt(s.summary_rss || s.source_text || ''); if (wc(ex) > wc(txt)) txt = ex; flag = true; }
+    const ss = splitS(txt);
+    if (ss.length > 1 && jac(ss[0], s.src_title || s.title) > 0.75) { const rest = ss.slice(1).join(' '); if (wc(rest) >= 25) txt = rest; }
+    if (wc(txt) > 120) { let out = [], n = 0; for (const x of splitS(txt)) { if (n + wc(x) > 110 && n >= 60) break; out.push(x); n += wc(x); } txt = out.join(' '); }
+    return {text: txt, flag};
+  }
+  W.pppDisplayTitle = displayTitle; W.pppSummary = summaryOf;
+
+  /* ═════════════ 3. PROJECT ASSIGNMENT (explicit ids first, alias fallback) ═════════════ */
+  const leadOf = s => splitS(cleanTxt(s.source_text || s.summary || '')).slice(0, 2).join(' ');
+  function projectIdsOf(s){
+    if (s._pidV === IDXV) return s._pids;
+    let ids = [];
+    if (Array.isArray(s.project_ids) && s.project_ids.length) ids = s.project_ids.filter(id => PROJ[id]);           /* enrichment */
+    else if (CUR[s.id] && Array.isArray(CUR[s.id].project_ids)) ids = CUR[s.id].project_ids.filter(id => PROJ[id]); /* analyst */
+    else {
+      const txt = ' ' + fold([s.title, s.title_pl, s.src_title, s.change, s.unit, s.auto ? leadOf(s) : ''].join(' ')) + ' ';
+      Object.values(PROJ).forEach(p => {
+        if (p._exc.some(r => r.test(txt))) return;
+        const byAsset = (s.assets || []).some(a => p._assets.has(a));
+        const byAlias = p._al.some(r => r.test(txt));
+        const byCtx = p._ctx.some(c => c.re.test(txt) && (!c.req.length || c.req.some(r => r.test(txt))) && !c.exc.some(r => r.test(txt)));
+        if (byAsset || byAlias || byCtx) ids.push(p.id);
+      });
+    }
+    s._pids = [...new Set(ids)]; s._pidV = IDXV; return s._pids;
+  }
+  W.pppProjectIds = projectIdsOf;
+
+  /* ═════════════ 4. MILESTONES (from structured data only) ═════════════ */
+  const BUILD2STAGE = {PLAN: 'PLAN', PERM: 'PERM', AUC: 'AUC', FIN: 'FIN', PROC: 'PROC', MA: 'OWN', CON: 'CON', COM: 'COM', SET: 'DELAY'};
+  const CUE = [
+    ['CANCEL', /\b(cancel\w*|scrap\w*|terminat\w+|withdr\w+ from|suspend\w*|abandon\w*|anulow\w*|wycof\w*)\b/i],
+    ['DELAY', /\b(delay\w*|postpon\w+|slipp\w+|missed|not been met|deadline (reset|moved|extended)|revised (schedule|timeline)|opóźni\w*)\b/i],
+    ['OPS', /\b(commercial operation|enters? (commercial )?operation|comes? online|brought online|fully operational|oddan\w* do eksploatacji)\b/i],
+    ['COM', /\b(first power|first electricity|energi[sz]ed|synchroni[sz]ed|commissioning|commissioned|start-up phase|rozruch\w*)\b/i],
+    ['OWN', /\b(acquir\w+|acquisition|buys?|bought|sells?|sold|sale of|divest\w*|stake|takeover|squeeze[- ]out|shareholders'? agreement|przejęc\w*|sprzeda\w*)\b/i],
+    ['FIN', /\b(final investment decision|fid|financial close|project financ\w+|loan|credit agreement|financing secured|secures? .{0,30}financ\w+|kredyt\w*)\b/i],
+    ['AUC', /\b(cfd|contract for difference|capacity (market )?(contract|auction|obligation)|auction (win|result)|wins? .{0,30}auction|support award\w*|subsid\w*|grant\w*|state[- ]aid)\b/i],
+    ['PROC', /\b(epc|contract\w*|tender\w*|procure\w*|order\w*|supplier\w*|contractor\w*|turbine (supply|island)|purchase orders?|wykonawc\w*|przetarg\w*|umow\w*)\b/i],
+    ['CON', /\b(construction|groundbreaking|breaks? ground|broke ground|earthworks?|foundations?|monopiles?|installation|installed|cornerstone|budow\w*)\b/i],
+    ['PERM', /\b(permit\w*|licen[cs]e\w*|environmental (decision|approval)|site (suitab\w+|assessment)|pozwoleni\w*|koncesj\w*|decyzj\w* środowiskow\w*)\b/i],
+    ['PLAN', /\b(plans?|announce\w*|unveil\w*|launch\w* (the )?project|cooperation agreement|letter of intent|memorandum|agreement signed|signs? (an? )?agreement|signed (an? )?agreement)\b/i]
+  ];
+  const NOT_MS = /\b(opinion|op-ed|interview|podcast|webinar|conference|summit|forum|anniversary|marks \d+ years|weekly|monthly|round-?up|digest|step by step|how |why |what )\b|podsumowanie tygodnia|przegl[aą]d tygodnia/i;
+  function autoStage(s){
+    if (W.STAGE_FIX && W.STAGE_FIX[s.id]) { const st = BUILD2STAGE[W.STAGE_FIX[s.id]]; if (st === 'DELAY' && CUE[0][1].test(s.title + ' ' + s.change)) return 'CANCEL'; return st; }
+    const h = [s.title, s.title_pl, s.change].join(' ');
+    const c = CUE.find(([, r]) => r.test(h)); return c ? c[0] : null;
+  }
+  function autoText(s){
+    const c = cleanTxt(s.change || '').replace(/\.$/, '');
+    if (c && wc(c) <= 18 && jac(c, s.src_title || s.title) < 0.9) return c;
+    return displayTitle(s);
+  }
+  function mkMs(s, pid, m, origin){
+    ensureSrc(s);
+    const st = STAGE[m.stage] ? m.stage : null; if (!st) return null;
+    const stated = !!m.milestone_date && m.milestone_date !== s.date;
+    return {pid, id: s.id, s, origin, stage: st, text: String(m.text || autoText(s)).trim(),
+      date: m.milestone_date || s.date, basis: stated ? (m.date_basis || 'stated') : (m.date_basis === 'stated' ? 'stated' : 'publication'),
+      confidence: m.confidence || (origin === 'auto' ? (s.auto ? 'low' : 'medium') : 'medium'),
+      needsReview: !!(m.review && m.review.needed) || (s.review && s.review.needed) || (m.confidence === 'low') || (origin === 'auto' && !!s.auto),
+      url: firstUrl(s), publisher: s.publisher || host(firstUrl(s)) || 'Source', srcTitle: s.src_title || s.title, srcEn: s.src_en || '',
+      linkType: ((s.links || [])[0] || {}).type || 'press', also: []};
+  }
+  function milestoneFor(s, pid){
+    const c = CUR[s.id];
+    if (c && c.milestones && c.milestones[pid]) { const m = c.milestones[pid]; return m.is_milestone === false ? {none: m.reason || 'Not a milestone'} : (mkMs(s, pid, m, 'analyst') || {none: 'Unknown stage'}); }
+    let bm = null;
+    if (Array.isArray(s.milestones)) bm = s.milestones.find(x => x && x.project_id === pid) || null;
+    else if (s.milestone && (!s.milestone.project_id || s.milestone.project_id === pid)) bm = s.milestone;
+    if (bm) return bm.is_milestone === false ? {none: bm.reason || 'Not a material project change (enrichment)'} : (mkMs(s, pid, bm, 'enrichment') || {none: 'Unknown stage'});
+    /* automatic fallback for older records without milestone fields */
+    const head = (s.title || '') + ' ' + (s.title_pl || '');
+    if ((W.isEditorialItem && W.isEditorialItem(s)) || NOT_MS.test(head)) return {none: 'Feature, commentary or round-up — no new project decision'};
+    if (['RES', 'LEAD', 'STR', 'TAR'].includes(s.sub) && !/\b(fid|contract|acqui|sale|construction)\b/i.test(head)) return {none: 'Corporate or results item — no distinct project milestone'};
+    if (s.newsOnly) return {none: 'Market or policy news — no project decision'};
+    const st = autoStage(s); if (!st) return {none: 'No material project change detected'};
+    return mkMs(s, pid, {stage: st, text: autoText(s)}, 'auto') || {none: 'Unknown stage'};
+  }
+  const TYPE_RANK = {gov: 4, filing: 4, official: 3, company: 3};
+  function srcRank(m){
+    let r = TYPE_RANK[m.linkType] || 0;
+    if (!r) { const t = W.sourceTier ? W.sourceTier(m.s) : 3; r = t === 1 ? 3 : t === 2 ? 2 : 1; }
+    return r;
+  }
+  function mergeMs(list){
+    const out = [];
+    list.sort((a, b) => a.date.localeCompare(b.date)).forEach(m => {
+      const e = out.find(x => x.stage === m.stage && ((x.url && x.url === m.url) ||
+        (days(x.date, m.date) <= 3 && (x.date === m.date || jac(x.text, m.text) >= 0.3 || !!x.s.auto !== !!m.s.auto || (x.s.auto && m.s.auto && jac(x.s.summary, m.s.summary) >= 0.3)))));
+      if (!e) { out.push(m); return; }
+      /* keep the analyst/enrichment record; lead with the most authoritative source */
+      const curated = x => x.origin === 'analyst' || !x.s.auto, rec = (!curated(e) && curated(m)) || (e.origin === 'auto' && m.origin !== 'auto') ? m : e, oth = rec === e ? m : e;
+      const best = srcRank(m) > srcRank(e) ? m : (srcRank(m) < srcRank(e) ? e : (m.date < e.date ? m : e));
+      const merged = Object.assign({}, rec, {url: best.url, publisher: best.publisher, srcTitle: best.srcTitle, srcEn: best.srcEn, linkType: best.linkType,
+        also: rec.also.concat(oth.also, [best === m ? e : m].map(x => ({publisher: x.publisher, url: x.url, title: x.srcTitle, date: x.date, id: x.id})))});
+      merged.ids = [...new Set([].concat(rec.ids || [rec.id], oth.ids || [oth.id]))];
+      out[out.indexOf(e)] = merged;
+    });
+    return out;
+  }
+  const excluded = s => (W.outOfScope && W.outOfScope(s)) || (W.offScopeLive && W.offScopeLive(s)) || (W.reviewOf && W.reviewOf(s.id).status === 'excluded');
+  let TL = null, TLV = -1;
+  function timelines(){
+    syncIdx(); if (TL && TLV === IDXV) return TL;
+    const ms = {}, rel = {};
+    Object.keys(PROJ).forEach(id => { ms[id] = []; rel[id] = []; });
+    (typeof SIGNALS !== 'undefined' ? SIGNALS : []).forEach(s => {
+      if (excluded(s)) return;
+      const pids = projectIdsOf(s); s._msText = '';
+      pids.forEach(pid => {
+        const m = milestoneFor(s, pid);
+        if (m && !m.none) { ms[pid].push(m); s._msText += ' ' + STAGE[m.stage].label + ' ' + m.text; }
+        else rel[pid].push({s, reason: (m && m.none) || ''});
+      });
+    });
+    Object.keys(ms).forEach(id => {
+      ms[id] = mergeMs(ms[id]).map(m => {
+        /* the item's own additional article links stay available as "also reported by" */
+        const seen = new Set([m.url].concat(m.also.map(a => a.url)));
+        (m.s.links || []).forEach(l => { if (!l.url || seen.has(l.url) || /(capacity|timeline) source$/.test(l.label || '')) return;
+          seen.add(l.url); m.also.push({publisher: String(l.label || host(l.url)).replace(/\s+—\s+(article|also reported|press release)$/i, '').replace(/\s+·\s+subscription required$/, ''), url: l.url}); });
+        return m;
+      });
+      const inMs = new Set(ms[id].flatMap(m => m.ids || [m.id]));
+      rel[id] = rel[id].filter(r => !inMs.has(r.s.id));
+    });
+    TL = {ms, rel}; TLV = IDXV; return TL;
+  }
+  W.pppTimelines = () => timelines();
+
+  /* ═════════════ 5. MULTILINGUAL CONCEPT SEARCH ═════════════ */
+  const QCACHE = new Map();
+  function parseQuery(q){
+    if (QCACHE.has(q)) return QCACHE.get(q);
+    const units = [], plain = [];
+    const flush = () => {
+      for (let i = 0; i < plain.length;) {
+        let done = false;
+        for (let n = Math.min(6, plain.length - i); n >= 1; n--) {
+          const ph = plain.slice(i, i + n).join(' '), gs = groupsFor(ph, n);
+          if (gs.size || n === 1) { units.push({lit: ph, gs}); i += n; done = true; break; }
+        }
+        if (!done) i++;
+      }
+      plain.length = 0;
+    };
+    const rx = /"([^"]+)"|(\S+)/g; let m; const src = String(q).replace(/[“”„]/g, '"');
+    while ((m = rx.exec(src))) {
+      if (m[1] != null) { flush(); const ph = fold(m[1]); if (ph) units.push({lit: ph, gs: groupsFor(ph, ph.split(' ').length)}); }
+      else fold(m[2]).split(' ').filter(Boolean).forEach(w => plain.push(w));
+    }
+    flush();
+    QCACHE.set(q, units); if (QCACHE.size > 200) QCACHE.delete(QCACHE.keys().next().value);
+    return units;
+  }
+  function groupsFor(phrase, n){ const g = new Set(); CTERMS.forEach(t => { if (t.n === n && t.anch.test(phrase)) g.add(t.gi); }); return g; }
+  const unitMatch = (u, h) => h.includes(u.lit) || [...u.gs].some(gi => CONCEPTS[gi].rx.some(r => r.test(h)));
+  function hayOf(s){
+    if (s._hayV === IDXV) return s._hay;
+    ensureSrc(s);
+    const pids = projectIdsOf(s);
+    const raw = [displayTitle(s), s.hl_fix, s.title, s.title_pl, s.title_en, s.src_title, s.src_en, s.sig_title, s.summary, s.summary_rss,
+      s.change, s.why, s.unit, s.region, (s.regions || []).join(' '), (s.assets || []).join(' '), (s.cos || []).map(c => coLabel(c)).join(' '),
+      (s.tech || []).map(t => TECH_LABEL[t] || t).join(' '), s.publisher, s._msText || '', (s.milestone && s.milestone.text) || '',
+      pids.map(p => PROJ[p].name + ' ' + (PROJ[p].aliases || []).join(' ')).join(' ')].filter(Boolean).join(' | ');
+    const ex = new Set(); let m; ACR_RE.lastIndex = 0;
+    while ((m = ACR_RE.exec(raw))) ex.add(ACR[m[1]].key);
+    (s.acronyms || []).forEach(k => { if (ACR[k]) ex.add(ACR[k].key); });
+    const exp = [...ex].map(k => acrExp(ACR[k])).join(' ');
+    s._hay = ' ' + fold(raw + ' ' + exp) + ' '; s._hayV = IDXV; return s._hay;
+  }
+  function matchQuery(s, q){
+    const key = IDXV + '\u0001' + q;
+    if (s._qk === key) return s._qr;
+    const units = parseQuery(q), h = hayOf(s);
+    const r = units.every(u => unitMatch(u, h));
+    s._qk = key; s._qr = r; return r;
+  }
+  W.pppSearch = {parse: parseQuery, match: (s, q) => matchQuery(s, q), hay: hayOf};
+  const prevPasses = passes;
+  passes = function(s, skip){
+    const q = F.q;
+    if (!q || !String(q).trim()) return prevPasses(s, skip);
+    F.q = ''; let ok; try { ok = prevPasses(s, skip); } finally { F.q = q; }
+    return ok && matchQuery(s, q);
+  };
+  /* search box: keep spaces, debounce 200 ms, one listener */
+  (function(){
+    const old = document.getElementById('q'); if (!old) return;
+    const box = old.cloneNode(true); old.parentNode.replaceChild(box, old);
+    box.value = F.q || '';
+    box.placeholder = 'Search in English or Polish — e.g. capacity market storage · "rynek mocy" · PEJ permit · Gdansk CCGT';
+    box.title = 'Several words = all must match (any order). "Quoted phrase" = exact phrase. English and Polish terms find each other (e.g. capacity market ↔ rynek mocy). Polish letters are optional.';
+    let t = 0;
+    box.addEventListener('input', e => { const v = e.target.value; clearTimeout(t); t = setTimeout(() => { F.q = v; render(); }, 200); });
+    box.addEventListener('keydown', e => { if (e.key === 'Enter') { clearTimeout(t); F.q = box.value; render(); } });
+    const rs = document.getElementById('reset');
+    if (rs) { const prev = rs.onclick; rs.onclick = function(){ clearTimeout(t); if (prev) prev.apply(this, arguments); F.q = ''; box.value = ''; render(); }; }
+  })();
+
+  /* ═════════════ 6. NEWS FEED — compact rows + accordion summary ═════════════ */
+  let openNews = '';
+  const otherLinks = (s, primary) => {
+    const seen = new Set([primary]); const out = [];
+    (s.links || []).forEach(l => { if (!l.url || seen.has(l.url) || /(capacity|timeline) source$/.test(l.label || '')) return; seen.add(l.url);
+      out.push({url: l.url, label: String(l.label || host(l.url)).replace(/\s+—\s+(article|also reported)$/i, '')}); });
+    return out;
+  };
+  renderNews = function(){
+    const all = SIGNALS.filter(s => passes(s)).map(ensureSrc);
+    const list = dedupe(all.filter(s => s.in_feed).sort((a, b) => b.date.localeCompare(a.date)));
+    if (!list.length) { $('#view').innerHTML = `<div class="empty"><h2>No news for this selection</h2><p>Adjust the search, filters or date range.</p></div>`; return; }
+    const T = timelines();
+    const rows = list.map((s, i) => {
+      const id = 'nx' + i, open = openNews === s.id, d = displayTitle(s), sm = summaryOf(s), seen = new Set();
+      const url = firstUrl(s) || '#', pl = !!(s.src_en && s.src_en !== s.src_title);
+      const pids = projectIdsOf(s).filter(p => (T.ms[p] || []).length);
+      const more = otherLinks(s, url);
+      return `<tr class="nrow" data-sid="${esc(s.id)}"><td class="nd">${fmtDate(s.date)}</td>
+        <td class="nhd"><button type="button" class="nx-btn" id="${id}-b" aria-expanded="${open}" aria-controls="${id}-p" data-nx="${esc(s.id)}"><span class="nx-car" aria-hidden="true">▶</span><span class="nx-t">${acrHtml(d)}</span></button></td>
+        <td class="ns">${esc(s.publisher)}</td></tr>
+        <tr class="nx-row" id="${id}-p"${open ? '' : ' hidden'}><td colspan="3"><div class="nx-panel" role="region" aria-labelledby="${id}-b">
+          <span class="nx-lab">Summary</span>${sm.flag ? `<span class="nx-flag">Source excerpt · pending analyst review</span>` : ''}
+          <p class="nx-sum">${sm.text ? acrHtml(sm.text, seen) : 'No summary could be produced from the source. Please open the original article.'}</p>
+          <span class="nx-lab">Original headline</span><p class="nx-orig" lang="${pl ? 'pl' : 'en'}">${acrHtml(s.src_title || s.title, seen)} <i>— ${esc(s.publisher)}, ${fmtDate(s.date)}</i></p>
+          ${pl ? `<span class="nx-lab">English translation</span><p class="nx-orig" lang="en">${acrHtml(s.src_en, seen)}</p>` : ''}
+          <div class="nx-acts"><a class="nx-open" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Open original source ↗</a>
+            ${pids.length ? `<span class="nx-pj">Project timeline: ${pids.map(p => `<button type="button" class="pj-link" data-pj="${esc(p)}">${esc(PROJ[p].name)} →</button>`).join('')}</span>` : ''}
+            ${more.length ? `<span class="nx-also">Also: ${more.slice(0, 5).map(l => `<a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">${esc(l.label)} ↗</a>`).join('')}</span>` : ''}</div>
+          <p class="nx-note">Headline and summary are written for clarity from the source; the original article is authoritative.</p>
+        </div></td></tr>`;
+    }).join('');
+    $('#view').innerHTML = `<div class="ntable panel"><p class="nx-disc">Click a headline to read a short summary, the original publisher headline and the source link. Headlines are rephrased for clarity; the original source remains authoritative.</p>
+      <table class="nx-table"><thead><tr><th style="width:120px">Date</th><th>Headline</th><th style="width:200px">Source</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  };
+  function setNews(btn, open){
+    const p = document.getElementById(btn.getAttribute('aria-controls'));
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false'); if (p) p.hidden = !open;
+  }
+  function toggleNews(btn){
+    const sid = btn.dataset.nx, open = btn.getAttribute('aria-expanded') !== 'true';
+    document.querySelectorAll('#view .nx-btn[aria-expanded="true"]').forEach(b => { if (b !== btn) setNews(b, false); });
+    setNews(btn, open); openNews = open ? sid : '';
+  }
+
+  /* ═════════════ 7. SIGNAL MONITOR CARDS — clickable project / asset drill-down ═════════════ */
+  /* ═════════════ 8. PROJECT TIMELINES VIEW (sub-view of the Signal Monitor) ═════════════ */
+  const PT = {open: false, pid: '', q: '', tech: '', from: '', to: '', sort: 'desc', y: 0, focus: '', msg: ''};
+  W.pppPT = PT;
+  const coNames = s => (s.cos || []).filter(c => c !== 'ALL' && c !== 'OTHER').map(c => coLabel(c));
+  const techOf = p => (p.technology || [])[0] || 'other';
+  const techName = t => (typeof TECH_LABEL !== 'undefined' && TECH_LABEL[t]) || t;
+  const inDates = m => (!PT.from || m.date >= PT.from) && (!PT.to || m.date <= PT.to);
+  const msPass = m => inDates(m);
+  const projMatch = p => { const q = fold(PT.q); return (!PT.tech || techOf(p) === PT.tech) && (!q || q.split(' ').every(w => p._hay.includes(w))); };
+  const REV = {verified: ['ok', 'Verified by analyst'], correction: ['fix', 'Needs correction'], pending: ['pend', 'Pending analyst review'], excluded: ['fix', 'Excluded']};
+  function revBadge(m){
+    const R = W.reviewOf ? W.reviewOf(m.id) : {};
+    if (R.status && REV[R.status]) return `<span class="pt-rev ${REV[R.status][0]}">${REV[R.status][1]}</span>`;
+    if (m.needsReview) return `<span class="pt-rev pend">Pending analyst review</span>`;
+    return m.s.auto ? `<span class="pt-rev pend">Automated · not yet reviewed</span>` : `<span class="pt-rev ok">Reviewed (curated)</span>`;
+  }
+  function msHtml(m, showProject){
+    const st = STAGE[m.stage], d = fmtDate(m.date), seen = new Set();
+    const who = coNames(m.s).join(', ') || (PROJ[m.pid].owners || []).join(', ');
+    return `<li class="pt-ms" style="--sc:${st.color}"><div class="pt-date"><time datetime="${esc(m.date)}">${d}</time>
+        <small>${m.basis === 'stated' ? 'Date stated in source' : 'Publication date'}</small></div>
+      <div class="pt-body"><div class="pt-tags">${showProject ? `<button type="button" class="pt-pname" data-pj="${esc(m.pid)}" title="Open this project's timeline">${esc(PROJ[m.pid].name)}</button>` : ''}<span class="pt-stage">${esc(st.label)}</span></div>
+        <p class="pt-text">${acrHtml(m.text, seen)}</p>
+        ${msSummary(m) ? `<p class="pt-msum">${acrHtml(msSummary(m), seen)}</p>` : ''}
+        <div class="pt-src pt-also">Sources: ${[{publisher: m.publisher, url: m.url, title: m.srcTitle}].concat(m.also.slice(0, 6)).filter(a => a.url).map(a => `<a href="${esc(a.url)}" target="_blank" rel="noopener noreferrer"${a.title ? ` title="${esc(a.title)}"` : ''}>${esc(a.publisher)} ↗</a>`).join('')}</div>
+</div></li>`;
+  }
+  /* v110: 3–5 line summary per milestone, taken from that milestone's own source item */
+  function msSummary(m){
+    const t = summaryOf(m.s).text || ''; if (!t) return '';
+    const out = []; let n = 0;
+    for (const x of splitS(t)) { if (n >= 45 && n + wc(x) > 75) break; out.push(x); n += wc(x); if (n >= 75) break; }
+    return out.join(' ');
+  }
+  function latestOf(list){ return list.slice().sort((a, b) => b.date.localeCompare(a.date))[0]; }
+  function renderTimeline(){
+    const T = timelines();
+    const projs = Object.values(PROJ).filter(p => (T.ms[p.id] || []).length || (T.rel[p.id] || []).length);
+    const techs = [...new Set(projs.map(techOf))].sort((a, b) => techName(a).localeCompare(techName(b)));
+    if (PT.tech && !techs.includes(PT.tech)) PT.tech = '';
+    const shown = projs.filter(projMatch).sort((a, b) => a.name.localeCompare(b.name));
+    const opts = shown.map(p => `<option value="${esc(p.id)}" ${PT.pid === p.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
+    const tOpts = techs.map(t => `<option value="${esc(t)}" ${PT.tech === t ? 'selected' : ''}>${esc(techName(t))} (${projs.filter(p => techOf(p) === t).length})</option>`).join('');
+    let html = `<section class="gsb-intro pt-head"><div class="pt-top"><h2>Project Milestones</h2></div>
+      <div class="pt-ctrl">
+        <label>Find project<input type="search" data-pt-in="q" value="${esc(PT.q)}" placeholder="e.g. Baltica, PEJ, Bałtyk" aria-label="Find project"></label>
+        <label>Project<select data-pt-in="pid" aria-label="Select project"><option value="">All projects</option>${opts}</select></label>
+        <label>Technology<select data-pt-in="tech" aria-label="Technology"><option value="">All technologies</option>${tOpts}</select></label>
+        <label>From<input type="date" data-pt-in="from" value="${esc(PT.from)}" aria-label="From date"></label>
+        <label>To<input type="date" data-pt-in="to" value="${esc(PT.to)}" aria-label="To date"></label>
+        <div class="pt-sort" role="group" aria-label="Sort order"><button type="button" data-pt="sort" data-v="desc" aria-pressed="${PT.sort === 'desc'}">Newest first</button><button type="button" data-pt="sort" data-v="asc" aria-pressed="${PT.sort === 'asc'}">Oldest first</button></div>
+      </div>
+      ${PT.msg ? `<p class="pt-note" role="status"><b>${esc(PT.msg)}</b></p>` : ''}</section>`;
+    if (!PT.pid || !PROJ[PT.pid]) {
+      html += `<div class="pt-empty">${shown.length ? 'Select a project to see its milestones.' : 'No project matches this search or technology.'}</div>`;
+    } else {
+      const p = PROJ[PT.pid], all = T.ms[p.id] || [], list = all.filter(msPass).sort((a, b) => PT.sort === 'asc' ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date));
+      const l = latestOf(all), rel = (T.rel[p.id] || []).slice().sort((a, b) => b.s.date.localeCompare(a.s.date));
+      html += `<section class="pt-proj"><div class="pt-proj-top"><h2>${acrHtml(p.name)}</h2><button type="button" class="pt-copy" data-pt="overview">All projects</button></div>
+        <dl class="pt-facts"><div><dt>Owner</dt><dd>${acrHtml((p.owners || []).join(', ') || '—')}</dd></div>
+          <div><dt>Technology</dt><dd>${acrHtml((p.technology || []).map(t => TECH_LABEL[t] || t).join(', '))}</dd></div>
+          <div><dt>Location</dt><dd>${esc(p.region || '—')}</dd></div>
+          ${p.capacity ? `<div><dt>Capacity</dt><dd>${acrHtml(p.capacity)}${p.capacity_source ? ` <a href="${esc(p.capacity_source)}" target="_blank" rel="noopener noreferrer" title="Capacity source">↗</a>` : ''}</dd></div>` : ''}
+          <div><dt>Latest milestone</dt><dd class="pt-latest">${l ? `${fmtDate(l.date)} · ${esc(STAGE[l.stage].label)} — ${acrHtml(l.text)}` : '—'}</dd></div>
+</dl>
+</section>`;
+      html += `<h3 class="pt-mshead">Milestones</h3>`;
+      html += list.length ? `<ol class="pt-tl" aria-label="Milestones for ${esc(p.name)}">${list.map(m => msHtml(m, false)).join('')}</ol>` : `<div class="pt-empty">No milestones match the selected dates.</div>`;
+      if (rel.length) html += `<details class="pt-rel"><summary>Related coverage without a milestone (${rel.length})</summary><ul>${rel.map(r => `<li>${fmtDate(r.s.date)} · ${acrHtml(displayTitle(r.s))} — <a href="${esc(firstUrl(r.s) || '#')}" target="_blank" rel="noopener noreferrer">${esc(r.s.publisher || 'Source')} ↗</a>${r.reason ? ` <i>(${esc(r.reason)})</i>` : ''}</li>`).join('')}</ul></details>`;
+    }
+    html += `<p class="pt-foot">Timelines are compiled automatically from the source articles linked in this dashboard, using explicit project assignments first. Milestone wording is a concise label; the original source is authoritative. Dates are publication dates unless the source states a different milestone date. The Signal Monitor filters do not apply here.</p>`;
+    $('#view').innerHTML = html;
+  }
+  const prevSignals = renderSignals;
+  renderSignals = function(){ if (PT.open) return renderTimeline(); return prevSignals.apply(this, arguments); };
+
+  /* URL: #project=<id> · #projects · ?view=projects&project=<id> (GitHub Pages safe) */
+  function cleanUrl(){
+    const u = new URL(location.href); u.hash = ''; u.searchParams.delete('view'); u.searchParams.delete('project');
+    history.replaceState(null, '', u.pathname + (u.searchParams.toString() ? '?' + u.searchParams : ''));
+  }
+  function setHash(h){ if (location.hash !== h) history.pushState({ppp: h}, '', h); }
+  function openPT(pid, opt){
+    opt = opt || {};
+    if (view !== 'signals') { const t = document.querySelector('.tab[data-v="signals"]'); if (t) t.click(); }
+    if (!PT.open) PT.y = window.scrollY;
+    PT.open = true; PT.msg = '';
+    if (pid && !PROJ[pid]) { PT.msg = `Project “${pid}” was not found — showing all projects.`; pid = ''; }
+    PT.pid = pid || '';
+    if (opt.push !== false) setHash(PT.pid ? '#project=' + encodeURIComponent(PT.pid) : '#projects');
+    render();
+    const lay = document.querySelector('.layout'); if (lay && opt.scroll !== false) window.scrollTo({top: Math.max(0, lay.offsetTop - 70), behavior: 'auto'});
+  }
+  function closePT(opt){
+    opt = opt || {}; if (!PT.open) return;
+    PT.open = false; PT.msg = ''; if (opt.url !== false) cleanUrl();
+    render(); const y = PT.y; requestAnimationFrame(() => window.scrollTo(0, y));
+  }
+  function readUrl(){
+    const h = decodeURIComponent(location.hash || ''), sp = new URLSearchParams(location.search);
+    let m = h.match(/^#project=(.+)$/);
+    if (m) return {pid: m[1]};
+    if (h === '#projects') return {pid: ''};
+    if (sp.get('view') === 'projects') return {pid: sp.get('project') || ''};
+    return null;
+  }
+  window.addEventListener('popstate', () => { const r = readUrl(); if (r) openPT(r.pid, {push: false}); else if (PT.open) closePT({url: false}); });
+  window.addEventListener('hashchange', () => { const r = readUrl(); if (r && (r.pid !== PT.pid || !PT.open)) openPT(r.pid, {push: false}); });
+
+  /* tab button next to News Feed / Signal Monitor */
+  (function(){
+    const tabs = document.querySelector('.tabs'); if (!tabs) return;
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'tab pt-tab'; b.setAttribute('data-ptab', '');
+    b.setAttribute('aria-pressed', 'false'); b.innerHTML = 'Project Milestones <span class="n" id="nPT">0</span>';
+    tabs.appendChild(b);
+    b.addEventListener('click', () => openPT(PT.pid || PT_DEFAULT));
+    const sig = document.querySelector('.tab[data-v="signals"]'); if (sig) sig.addEventListener('click', () => { if (PT.open) closePT(); });
+    const news = document.querySelector('.tab[data-v="news"]'); if (news) news.addEventListener('click', () => { if (PT.open) { PT.open = false; cleanUrl(); } });
+  })();
+
+  /* ═════════════ 9. EVENT DELEGATION (installed once) ═════════════ */
+  const viewEl = document.getElementById('view');
+  viewEl.addEventListener('click', e => {
+    const nx = e.target.closest('.nx-btn'); if (nx) { toggleNews(nx); return; }
+    const pj = e.target.closest('[data-pj]'); if (pj) { e.preventDefault(); openPT(pj.dataset.pj); return; }
+    const as = e.target.closest('[data-pj-asset]');
+    if (as) { F.asset = [as.dataset.pjAsset]; render(); const lay = document.querySelector('.layout'); if (lay) window.scrollTo({top: lay.offsetTop - 70, behavior: 'smooth'}); return; }
+    const b = e.target.closest('[data-pt]'); if (!b) return;
+    const a = b.dataset.pt;
+    if (a === 'back') closePT();
+    else if (a === 'overview') openPT('');
+    else if (a === 'sort') { PT.sort = b.dataset.v; render(); }
+    else if (a === 'copy') {
+      const u = new URL(location.href); u.search = ''; u.hash = '#project=' + encodeURIComponent(PT.pid);
+      const done = () => { b.textContent = 'Link copied ✓'; };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(u.toString()).then(done, () => { prompt('Copy this link:', u.toString()); });
+      else prompt('Copy this link:', u.toString());
+    }
+  });
+  viewEl.addEventListener('change', e => {
+    const el = e.target.closest('[data-pt-in]'); if (!el || el.dataset.ptIn === 'q') return;
+    const k = el.dataset.ptIn;
+    if (k === 'pid') openPT(el.value, {scroll: false});
+    else if (k === 'tech') { PT.tech = el.value; if (PT.pid && PROJ[PT.pid] && PT.tech && techOf(PROJ[PT.pid]) !== PT.tech) openPT('', {scroll: false}); else render(); }
+    else { PT[k] = el.value; render(); }
+  });
+  let ptT = 0;
+  viewEl.addEventListener('input', e => {
+    const el = e.target.closest('[data-pt-in="q"]'); if (!el) return;
+    clearTimeout(ptT); ptT = setTimeout(() => { PT.q = el.value; PT.focus = 'q'; render(); }, 180);
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if (!tip.hidden) hideTip();
+    const btn = document.querySelector('#view .nx-btn[aria-expanded="true"]');
+    if (btn && (btn === document.activeElement || (document.getElementById(btn.getAttribute('aria-controls')) || {contains: () => false}).contains(document.activeElement))) {
+      setNews(btn, false); openNews = ''; btn.focus();
+    }
+  });
+
+  /* ═════════════ 10. RENDER HOOK (decorate after every render) ═════════════ */
+  const prevRender = render;
+  render = function(){
+    syncIdx();
+    if (PT.open && view !== 'signals') PT.open = false;
+    prevRender.apply(this, arguments);
+    if (W.__quiet) return;
+    const T = timelines();
+    const n = Object.keys(PROJ).filter(id => (T.ms[id] || []).length).length;
+    const nPT = document.getElementById('nPT'); if (nPT) nPT.textContent = n;
+    const fb = document.querySelector('.fbar'); if (fb) fb.style.display = (PT.open && view === 'signals') ? 'none' : '';
+    const pb = document.querySelector('.tab.pt-tab');
+    if (pb) { const on = PT.open && view === 'signals'; pb.classList.toggle('on', on); pb.setAttribute('aria-pressed', on ? 'true' : 'false');
+      const sg = document.querySelector('.tab[data-v="signals"]'); if (sg && on) sg.classList.remove('on'); }
+    if (view === 'signals') acrWalk(document.getElementById('view'), true);
+    acrWalk(document.getElementById('filters'), false);
+    if (PT.open && PT.focus === 'q') { const el = document.querySelector('[data-pt-in="q"]'); if (el) { el.focus({preventScroll: true}); const v = el.value; el.setSelectionRange(v.length, v.length); } PT.focus = ''; }
+  };
+
+  /* ═════════════ 11. LIVE CONFIG REFRESH + DEEP LINK ON LOAD ═════════════ */
+  applyConfig();
+  const FILES = {acronyms: ['acronyms', 'acronyms'], concepts: ['search_concepts', 'concepts'], stages: ['milestone_stages', 'stages'], projects: ['projects', 'projects'], curated: ['curated_items', 'items']};
+  Promise.all(Object.entries(FILES).map(([k, [f, key]]) => fetch('config/' + f + '.json?t=' + Date.now(), {cache: 'no-store'})
+    .then(r => r.ok ? r.json() : null).then(j => (j && j[key]) ? [k, j[key]] : null).catch(() => null)))
+    .then(res => { let ch = false; res.forEach(x => { if (x) { PPP_CONFIG[x[0]] = x[1]; ch = true; } }); if (ch) { applyConfig(); if (!W.__quiet) render(); } });
+  (W.__parsed || Promise.resolve()).then(() => setTimeout(() => { const r = readUrl(); if (r) openPT(r.pid || PT_DEFAULT, {push: false}); }, 0));
+  render();
+})();
+
+</script>
+<!-- PPP v108 END -->
 <script>
 /* v87: every script block has run — the feed may now be applied and the counts revealed.
    In the browser console, console.table(__pppCounts) lists every visible change of the News Feed count. */
