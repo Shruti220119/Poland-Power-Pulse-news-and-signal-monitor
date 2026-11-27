@@ -1380,7 +1380,7 @@ const SOURCES = [["Government & legislation", "Ministry of Energy", "Government"
 function openSources(){
   const groups = [...new Set(SOURCES.map(x=>x[0]))];
   const NEWS = dedupe(SIGNALS.filter(s=>s.in_feed));   /* items shown in the News Feed (duplicates merged), not signals */
-  const count = m => { const p = m.split('|'); return NEWS.filter(s=>(s.links||[]).some(l=>p.some(x=>String(l.url||'').includes(x)))).length; };
+  const count = m => { const p = m.split('|'); return NEWS.filter(s=>[...(s.links||[]).map(l=>l.url), s.source_url].some(u=>p.some(x=>String(u||'').includes(x)))).length; };   /* also source_url: Google News items link to news.google.com */
   nl('srcBody').innerHTML = `<p class="src-intro">Polish primary sources come first — government, regulators, PSE/DSOs/TGE, company disclosures, procurement and permitting — complemented by selected established specialist media. Polish-language items are translated and summarised in English.</p>` +
     groups.map(g=>`<div class="src-grp"><h3>${g}</h3><table class="src-tbl"><thead><tr><th>Source</th><th>Type</th><th>News items</th></tr></thead><tbody>${
       SOURCES.filter(x=>x[0]===g).map(x=>`<tr><td><a href="${x[3]}" target="_blank" rel="noopener">${x[1]}</a><div class="src-url">${x[3].replace(/^https?:\/\//,'')}</div></td><td>${x[2]}</td><td class="src-n">${count(x[4])||'—'}</td></tr>`).join('')}</tbody></table></div>`).join('');
