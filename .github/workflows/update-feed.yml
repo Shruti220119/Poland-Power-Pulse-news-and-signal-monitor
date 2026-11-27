@@ -1,15 +1,9 @@
 name: Update live news feed
-# v6 (4 Nov 2026)
-#  - Runs at :07 and :37 past every hour. GitHub queues "top of the hour" schedules behind everyone
-#    else's, so */30 (:00 and :30) is the slot most often delayed or skipped.
-#  - Saves data/feed_status.json (what was checked in this run) and data/page_watch.json (links already
-#    seen on watched official pages) together with data/signals.json.
-#  - Writes a coverage summary on every run's page in the Actions tab.
 
 on:
   schedule:
-    - cron: "7,37 * * * *"      # every 30 minutes, off the busy :00/:30 slots
-  workflow_dispatch:            # "Run workflow" button
+    - cron: "*/30 * * * *"        # every 30 minutes (GitHub may start scheduled runs a few minutes late)
+  workflow_dispatch:              # "Run workflow" button for a manual check
 
 permissions:
   contents: write
@@ -20,104 +14,43 @@ concurrency:
 
 jobs:
   update:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-          persist-credentials: true
+      - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.11"
 
-      - name: Check repository files
-        run: |
-          if [ ! -f scripts/feed_fetcher.py ]; then
-            echo "::error::scripts/feed_fetcher.py is missing. Upload it into a folder named 'scripts' at the repo root."
-            exit 1
-          fi
-          if [ ! -f scripts/enrich_signals.py ]; then
-            echo "::warning::scripts/enrich_signals.py is missing - items will show the RSS teaser instead of the article text, capacity and delay. Upload it into 'scripts'."
-          fi
-          if [ "$HAS_TRANSLATOR" != "true" ]; then
-            echo "::warning::AZURE_TRANSLATOR_KEY secret is not set - Polish-language items are collected but NOT shown on the dashboard."
-          fi
-          mkdir -p data
-          [ -f data/signals.json ] || echo '{"updated": null, "signals": []}' > data/signals.json
+      - name: Fetch sources (existing + additional)
         env:
-          HAS_TRANSLATOR: ${{ secrets.AZURE_TRANSLATOR_KEY != '' }}
-
-      - name: Fetch live items (RSS feeds, Google News queries, official pages)
+          AZURE_TRANSLATOR_KEY: ${{ secrets.AZURE_TRANSLATOR_KEY }}
+          AZURE_TRANSLATOR_REGION: ${{ secrets.AZURE_TRANSLATOR_REGION }}
         run: python scripts/feed_fetcher.py
-        env:
-          AZURE_TRANSLATOR_KEY: ${{ secrets.AZURE_TRANSLATOR_KEY }}
-          AZURE_TRANSLATOR_REGION: ${{ secrets.AZURE_TRANSLATOR_REGION }}
 
-      - name: Read original articles (capacity, delay, what changed)
-        if: hashFiles('scripts/enrich_signals.py') != ''
+      - name: Enrich new items from the original articles
         run: python scripts/enrich_signals.py
-        continue-on-error: true        # a problem here must never stop the feed from being saved
-        env:
-          AZURE_TRANSLATOR_KEY: ${{ secrets.AZURE_TRANSLATOR_KEY }}
-          AZURE_TRANSLATOR_REGION: ${{ secrets.AZURE_TRANSLATOR_REGION }}
 
-      - name: Coverage summary
-        if: always()
+      - name: Show run summary
         run: |
-          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
-          import json, pathlib
-          p = pathlib.Path("data/feed_status.json")
-          if not p.exists():
-              print("### Feed status\nNo data/feed_status.json - the fetcher did not finish."); raise SystemExit
-          s = json.loads(p.read_text(encoding="utf-8"))
-          print("### Poland Power Pulse - feed run")
-          print(f"- Run (UTC): **{s['run_started_utc']} -> {s['run_finished_utc']}**")
-          print(f"- Registry sources checked: **{s['registry_sources_checked']} / {s['registry_sources']}**")
-          print(f"- Feeds / queries / pages OK: **{s['checks_ok']} / {s['checks_total']}**")
-          print(f"- New items this run: **{s['new_items_this_run']}** · items in feed: {s['items_in_feed']}")
-          print(f"- Translation: {s['translation']} · Polish items waiting for translation: {s['polish_items_waiting_for_translation']}")
-          if s["checks_failed"]:
-              print(f"- Failed this run (skipped, retried next run): {', '.join(s['checks_failed'])}")
-          print("\n| Check | Status | Items |\n|---|---|---|")
-          for k in ("rss", "google_news", "page_watch"):
-              for c in s[k]:
-                  print(f"| {k}: {c['source']} | {c.get('status')} | {c.get('items', 0)} |")
+          python - <<'PY'
+          import json
+          s = json.load(open("data/feed_status.json"))
+          a = s.get("additional_sources", {})
+          print("Run finished:", s["run_finished_utc"])
+          print("Websites OK:", s["websites_ok"], "/", s["websites_read_directly"])
+          print("Additional sources checked:", a.get("checked_this_run"), "/", a.get("live_sources"),
+                "· read OK:", a.get("with_at_least_one_ok_read"))
+          print("New items this run:", s["new_items_this_run"], "· items in feed:", s["items_in_feed"])
           PY
 
-      - name: Save feed to repository
+      - name: Commit updated data
         run: |
-          set +e
-          BRANCH="${GITHUB_REF_NAME}"
-          FILES="signals.json source_cache.json feed_status.json page_watch.json"
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
-          for f in $FILES; do [ -f "data/$f" ] && cp "data/$f" "$RUNNER_TEMP/$f"; done
-          for attempt in 1 2 3; do
-            git fetch origin "$BRANCH" || { echo "::error::Could not fetch branch '$BRANCH'."; exit 1; }
-            git reset --hard "origin/$BRANCH"          # take the latest repo state (no merge conflicts)
-            mkdir -p data
-            for f in $FILES; do
-              if [ -f "$RUNNER_TEMP/$f" ]; then cp "$RUNNER_TEMP/$f" "data/$f"; git add "data/$f"; fi
-            done
-            if git diff --cached --quiet; then
-              echo "No changes - nothing to commit."
-              exit 0
-            fi
-            git commit -q -m "Live feed update $(date -u +'%Y-%m-%d %H:%M UTC')"
-            OUT=$(git push origin "HEAD:$BRANCH" 2>&1); RC=$?
-            echo "$OUT"
-            if [ $RC -eq 0 ]; then echo "Feed saved."; exit 0; fi
-            if echo "$OUT" | grep -qiE "403|permission|denied"; then
-              echo "::error::Push blocked. Go to Settings > Actions > General > Workflow permissions, choose 'Read and write permissions', Save, then re-run."
-              exit 1
-            fi
-            if echo "$OUT" | grep -qiE "protected branch|GH006|rule"; then
-              echo "::error::Branch '$BRANCH' is protected. Allow github-actions to push, or remove the branch rule in Settings > Branches / Rules."
-              exit 1
-            fi
-            echo "Push attempt $attempt failed - retrying in 10 s..."; sleep 10
-          done
-          echo "::error::Push failed after 3 attempts. See the log lines above."
-          exit 1
+          git config user.name  "ppp-bot"
+          git config user.email "ppp-bot@users.noreply.github.com"
+          git add data/signals.json data/feed_status.json data/site_watch.json
+          git diff --cached --quiet && echo "No changes" && exit 0
+          git commit -m "Live feed update $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git pull --rebase --autostash
+          git push
