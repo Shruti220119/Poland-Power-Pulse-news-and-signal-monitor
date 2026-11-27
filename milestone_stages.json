@@ -1,0 +1,70 @@
+{
+ "stages": [
+  {
+   "id": "PLAN",
+   "order": 1,
+   "label": "Announced / Planning",
+   "color": "#5f5866"
+  },
+  {
+   "id": "PERM",
+   "order": 2,
+   "label": "Site & Permitting",
+   "color": "#3b5bdb"
+  },
+  {
+   "id": "AUC",
+   "order": 3,
+   "label": "Support / Auction",
+   "color": "#0b7285"
+  },
+  {
+   "id": "FIN",
+   "order": 4,
+   "label": "FID & Financing",
+   "color": "#7a3fa0"
+  },
+  {
+   "id": "PROC",
+   "order": 5,
+   "label": "Procurement & Contracting",
+   "color": "#c2410c"
+  },
+  {
+   "id": "CON",
+   "order": 6,
+   "label": "Construction",
+   "color": "#e0044e"
+  },
+  {
+   "id": "COM",
+   "order": 7,
+   "label": "Commissioning",
+   "color": "#b45309"
+  },
+  {
+   "id": "OPS",
+   "order": 8,
+   "label": "Operational",
+   "color": "#137a43"
+  },
+  {
+   "id": "DELAY",
+   "order": 9,
+   "label": "Delayed / Revised",
+   "color": "#d97706"
+  },
+  {
+   "id": "CANCEL",
+   "order": 10,
+   "label": "Suspended / Cancelled",
+   "color": "#b0003a"
+  },
+  {
+   "id": "OWN",
+   "order": 11,
+   "label": "Ownership Change",
+   "color": "#862e9c"
+  }
+ ]
+}

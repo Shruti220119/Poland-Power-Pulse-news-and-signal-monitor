@@ -1,0 +1,341 @@
+{
+ "concepts": [
+  {
+   "id": "capacity-market",
+   "terms": [
+    "capacity market",
+    "capacity mechanism",
+    "capacity auction*",
+    "capacity contract*",
+    "rynek mocy",
+    "rynk* mocy",
+    "mechanizm* mocow*",
+    "aukcj* mocy",
+    "aukcj* rynku mocy"
+   ]
+  },
+  {
+   "id": "energy-storage",
+   "terms": [
+    "energy storage",
+    "storage",
+    "storage facilit*",
+    "magazyn* energii",
+    "magazyn*",
+    "magazynowani* energii"
+   ]
+  },
+  {
+   "id": "battery-storage",
+   "terms": [
+    "battery storage",
+    "battery energy storage system*",
+    "battery",
+    "batteries",
+    "bess",
+    "magazyn* bateryjn*",
+    "bateri*",
+    "akumulator*"
+   ]
+  },
+  {
+   "id": "offshore-wind",
+   "terms": [
+    "offshore wind",
+    "offshore wind farm*",
+    "offshore",
+    "morsk* energetyk* wiatrow*",
+    "morsk* farm* wiatrow*",
+    "farm* wiatrow* na morzu",
+    "offshore wind energy"
+   ]
+  },
+  {
+   "id": "onshore-wind",
+   "terms": [
+    "onshore wind",
+    "onshore wind farm*",
+    "onshore",
+    "ladow* energetyk* wiatrow*",
+    "ladow* farm* wiatrow*",
+    "farm* wiatrow*",
+    "wind farm*",
+    "elektrowni* wiatrow*"
+   ]
+  },
+  {
+   "id": "wind",
+   "terms": [
+    "wind",
+    "wiatr*",
+    "wiatrow*"
+   ]
+  },
+  {
+   "id": "solar",
+   "terms": [
+    "solar",
+    "pv",
+    "photovoltaic*",
+    "fotowolt*",
+    "farm* fotowoltaiczn*",
+    "solar park*",
+    "solar farm*"
+   ]
+  },
+  {
+   "id": "nuclear",
+   "terms": [
+    "nuclear",
+    "atomic",
+    "jadrow*",
+    "atomow*",
+    "elektrowni* jadrow*",
+    "reactor*",
+    "reaktor*"
+   ]
+  },
+  {
+   "id": "grid-connection",
+   "terms": [
+    "grid connection*",
+    "connection to the grid",
+    "connection agreement*",
+    "connection condition*",
+    "connection point*",
+    "przylaczeni* do sieci",
+    "przylacz* do sieci",
+    "warunk* przylaczeni*",
+    "umow* przylaczeniow*",
+    "przylaczeni*"
+   ]
+  },
+  {
+   "id": "grid",
+   "terms": [
+    "grid",
+    "grids",
+    "network*",
+    "siec",
+    "sieci",
+    "sieciow*"
+   ]
+  },
+  {
+   "id": "permit",
+   "terms": [
+    "permit*",
+    "licen*",
+    "consent*",
+    "pozwoleni*",
+    "koncesj*",
+    "zezwoleni*"
+   ]
+  },
+  {
+   "id": "construction-permit",
+   "terms": [
+    "construction permit*",
+    "building permit*",
+    "construction licen*",
+    "pozwoleni* na budow*"
+   ]
+  },
+  {
+   "id": "environmental-decision",
+   "terms": [
+    "environmental decision*",
+    "environmental approval*",
+    "environmental permit*",
+    "decyzj* srodowiskow*",
+    "decyzj* o srodowiskowych uwarunkowaniach",
+    "srodowiskowych uwarunkowan*"
+   ]
+  },
+  {
+   "id": "fid",
+   "terms": [
+    "final investment decision*",
+    "fid",
+    "ostateczn* decyzj* inwestycyjn*",
+    "decyzj* inwestycyjn*"
+   ]
+  },
+  {
+   "id": "ccgt",
+   "terms": [
+    "combined cycle gas turbine*",
+    "combined cycle",
+    "ccgt",
+    "gas steam",
+    "gas steam unit*",
+    "blok* gazowo parow*",
+    "blok* parowo gazow*",
+    "gazowo parow*",
+    "parowo gazow*"
+   ]
+  },
+  {
+   "id": "ocgt",
+   "terms": [
+    "open cycle gas turbine*",
+    "open cycle",
+    "ocgt",
+    "peaker*",
+    "peaking unit*",
+    "peaking gas",
+    "turbin* gazow* w cyklu otwartym",
+    "jednostk* szczytow*",
+    "szczytow* elektrowni* gazow*"
+   ]
+  },
+  {
+   "id": "gas",
+   "terms": [
+    "gas fired",
+    "gas plant*",
+    "gas turbine*",
+    "gazow*",
+    "gaz"
+   ]
+  },
+  {
+   "id": "cogeneration",
+   "terms": [
+    "cogeneration",
+    "combined heat and power",
+    "chp",
+    "kogeneracj*",
+    "kogeneracyjn*",
+    "elektrocieplown*"
+   ]
+  },
+  {
+   "id": "cfd",
+   "terms": [
+    "contract for difference",
+    "contracts for difference",
+    "cfd",
+    "cfds",
+    "kontrakt* roznicow*"
+   ]
+  },
+  {
+   "id": "res",
+   "terms": [
+    "renewable energy sources",
+    "renewable energy source",
+    "renewables",
+    "renewable energy",
+    "res act",
+    "oze",
+    "odnawialn* zrodl* energii",
+    "odnawialn*"
+   ]
+  },
+  {
+   "id": "tso",
+   "terms": [
+    "transmission system operator*",
+    "tso",
+    "operator* systemu przesylowego",
+    "osp"
+   ]
+  },
+  {
+   "id": "dso",
+   "terms": [
+    "distribution system operator*",
+    "dso",
+    "dsos",
+    "operator* systemu dystrybucyjnego",
+    "osd"
+   ]
+  },
+  {
+   "id": "auction",
+   "terms": [
+    "auction*",
+    "aukcj*"
+   ]
+  },
+  {
+   "id": "financing",
+   "terms": [
+    "financing",
+    "financial close",
+    "loan*",
+    "project finance",
+    "finansowani*",
+    "kredyt*",
+    "pozyczk*"
+   ]
+  },
+  {
+   "id": "acquisition",
+   "terms": [
+    "acquisition*",
+    "acquire*",
+    "buys",
+    "takeover",
+    "stake",
+    "przejeci*",
+    "przejmuj*",
+    "zakup*",
+    "sprzedaz*",
+    "sale of"
+   ]
+  },
+  {
+   "id": "commissioning",
+   "terms": [
+    "commissioning",
+    "commissioned",
+    "first power",
+    "first electricity",
+    "rozruch*",
+    "uruchomieni*",
+    "oddani* do eksploatacji"
+   ]
+  },
+  {
+   "id": "construction",
+   "terms": [
+    "construction",
+    "build",
+    "builds",
+    "building",
+    "budow*",
+    "buduj*"
+   ]
+  },
+  {
+   "id": "hydrogen",
+   "terms": [
+    "hydrogen",
+    "wodor*",
+    "wodoru"
+   ]
+  },
+  {
+   "id": "heat",
+   "terms": [
+    "district heat*",
+    "heat source*",
+    "heating",
+    "cieplown*",
+    "cieplownictw*",
+    "zrodl* ciepla"
+   ]
+  },
+  {
+   "id": "tender",
+   "terms": [
+    "tender*",
+    "procurement",
+    "przetarg*",
+    "postepowani* przetargow*"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,820 @@
+{
+ "items": {
+  "a4": {
+   "project_ids": [
+    "lubiatowo-kopalino-npp"
+   ],
+   "display_title": "European Commission opens in-depth State-aid probe into support for Poland’s first nuclear plant",
+   "milestones": {
+    "lubiatowo-kopalino-npp": {
+     "stage": "AUC",
+     "text": "European Commission opens in-depth State-aid investigation into the support package",
+     "confidence": "high"
+    }
+   }
+  },
+  "a5": {
+   "project_ids": [
+    "lubiatowo-kopalino-npp"
+   ],
+   "display_title": "GDOŚ upholds environmental decision for the Lubiatowo-Kopalino nuclear plant",
+   "milestones": {
+    "lubiatowo-kopalino-npp": {
+     "stage": "PERM",
+     "text": "GDOŚ upholds the environmental decision",
+     "confidence": "high"
+    }
+   }
+  },
+  "nu5": {
+   "project_ids": [
+    "lubiatowo-kopalino-npp"
+   ],
+   "milestones": {
+    "lubiatowo-kopalino-npp": {
+     "stage": "FIN",
+     "text": "US EXIM signs first credit agreement with PEJ for design and engineering services",
+     "confidence": "high"
+    }
+   }
+  },
+  "nu3": {
+   "project_ids": [
+    "lubiatowo-kopalino-npp"
+   ],
+   "milestones": {
+    "lubiatowo-kopalino-npp": {
+     "stage": "PERM",
+     "text": "PEJ files the construction-licence application with the PAA",
+     "confidence": "high"
+    }
+   }
+  },
+  "nu4": {
+   "project_ids": [
+    "lubiatowo-kopalino-npp"
+   ],
+   "milestones": {
+    "lubiatowo-kopalino-npp": {
+     "stage": "PERM",
+     "text": "PAA confirms the site is suitable for the plant",
+     "confidence": "high"
+    }
+   }
+  },
+  "nu2": {
+   "project_ids": [
+    "lubiatowo-kopalino-npp"
+   ],
+   "display_title": "PEJ hands the Lubiatowo-Kopalino site to Bechtel as earthworks begin",
+   "milestones": {
+    "lubiatowo-kopalino-npp": {
+     "stage": "CON",
+     "text": "Site handed to Bechtel and earthworks begin",
+     "confidence": "high"
+    }
+   }
+  },
+  "u5": {
+   "project_ids": [
+    "lubiatowo-kopalino-npp"
+   ],
+   "display_title": "PEJ and Westinghouse-Bechtel agree main EPC commercial terms for the first Polish nuclear plant",
+   "milestones": {
+    "lubiatowo-kopalino-npp": {
+     "stage": "PROC",
+     "text": "PEJ and Westinghouse-Bechtel agree main EPC commercial terms",
+     "confidence": "high"
+    }
+   }
+  },
+  "u4": {
+   "project_ids": [
+    "lubiatowo-kopalino-npp",
+    "second-npp"
+   ],
+   "milestones": {
+    "lubiatowo-kopalino-npp": {
+     "stage": "DELAY",
+     "text": "Updated nuclear programme sets 2036 for the first unit",
+     "confidence": "medium",
+     "milestone_date": "2026-09-29",
+     "date_basis": "stated"
+    },
+    "second-npp": {
+     "stage": "PLAN",
+     "text": "Updated nuclear programme: partner selection 2027, first power around 2040",
+     "confidence": "medium",
+     "milestone_date": "2026-09-29",
+     "date_basis": "stated"
+    }
+   }
+  },
+  "nu1": {
+   "project_ids": [
+    "lubiatowo-kopalino-npp"
+   ],
+   "display_title": "PEJ starts long-lead procurement for the first Lubiatowo-Kopalino AP1000 unit",
+   "milestones": {
+    "lubiatowo-kopalino-npp": {
+     "stage": "PROC",
+     "text": "Long-lead procurement begins for the first AP1000 unit",
+     "confidence": "high"
+    }
+   }
+  },
+  "o2": {
+   "project_ids": [
+    "lubiatowo-kopalino-npp"
+   ],
+   "display_title": "Westinghouse places conditional module orders with four Polish suppliers for the first AP1000 unit",
+   "milestones": {
+    "lubiatowo-kopalino-npp": {
+     "stage": "PROC",
+     "text": "Conditional purchase orders placed with four Polish suppliers for structural modules",
+     "confidence": "high"
+    }
+   }
+  },
+  "v2": {
+   "project_ids": [
+    "lubiatowo-kopalino-npp"
+   ],
+   "milestones": {
+    "lubiatowo-kopalino-npp": {
+     "is_milestone": false,
+     "reason": "Planned permit application; no application or decision reported yet"
+    }
+   }
+  },
+  "rg1": {
+   "project_ids": [
+    "lubiatowo-kopalino-npp"
+   ],
+   "milestones": {
+    "lubiatowo-kopalino-npp": {
+     "is_milestone": false,
+     "reason": "National law amendment; related coverage, not a project milestone"
+    }
+   }
+  },
+  "h1": {
+   "project_ids": [
+    "baltic-power"
+   ],
+   "display_title": "Baltic Power to use low-emission steel in 52 of its 76 turbine towers",
+   "milestones": {
+    "baltic-power": {
+     "stage": "PROC",
+     "text": "Low-emission steel selected for 52 of the 76 turbine towers",
+     "confidence": "medium"
+    }
+   }
+  },
+  "h18": {
+   "project_ids": [
+    "baltic-power"
+   ],
+   "display_title": "Baltic Power delivers first offshore wind power to the Polish grid",
+   "milestones": {
+    "baltic-power": {
+     "stage": "COM",
+     "text": "First power delivered to the grid; PSE confirms receipt at Choczewo",
+     "confidence": "high"
+    }
+   }
+  },
+  "h19": {
+   "project_ids": [
+    "baltic-power"
+   ],
+   "display_title": "Baltic Power completes installation of all 76 turbines",
+   "milestones": {
+    "baltic-power": {
+     "stage": "CON",
+     "text": "Installation of all 76 turbines completed",
+     "confidence": "high"
+    }
+   }
+  },
+  "ic2": {
+   "project_ids": [
+    "baltyk-2-3"
+   ],
+   "display_title": "Heerema contracted to transport and install Bałtyk 2 and 3 foundations",
+   "milestones": {
+    "baltyk-2-3": {
+     "stage": "PROC",
+     "text": "Heerema contracted to transport and install 100 monopiles and substation foundations",
+     "confidence": "high"
+    }
+   }
+  },
+  "ic7": {
+   "project_ids": [
+    "baltyk-2-3"
+   ],
+   "display_title": "Polenergia and Equinor take final investment decisions on Bałtyk 2 and 3",
+   "milestones": {
+    "baltyk-2-3": {
+     "stage": "FIN",
+     "text": "Final investment decisions taken on Bałtyk 2 and 3",
+     "confidence": "high"
+    }
+   }
+  },
+  "ic8": {
+   "project_ids": [
+    "baltyk-2-3"
+   ],
+   "display_title": "Bałtyk 2 and 3 reach financial close with over €6bn of project finance",
+   "milestones": {
+    "baltyk-2-3": {
+     "stage": "FIN",
+     "text": "Financial close with over €6bn of project finance",
+     "confidence": "high"
+    }
+   }
+  },
+  "ic13": {
+   "project_ids": [
+    "baltyk-2-3"
+   ],
+   "display_title": "Offshore construction starts at Bałtyk 2 and 3",
+   "milestones": {
+    "baltyk-2-3": {
+     "stage": "CON",
+     "text": "Offshore construction starts with seabed rock placement",
+     "confidence": "medium"
+    }
+   }
+  },
+  "ic15": {
+   "project_ids": [
+    "baltyk-2-3"
+   ],
+   "display_title": "Bałtyk 2 and 3 complete first seabed rock phase as onshore transformers arrive",
+   "milestones": {
+    "baltyk-2-3": {
+     "stage": "CON",
+     "text": "First rock-placement phase complete; onshore transformers delivered; tower production started",
+     "confidence": "high"
+    }
+   }
+  },
+  "a6": {
+   "project_ids": [
+    "baltica-2"
+   ],
+   "display_title": "PGE and Ørsted take FID on the 1.5 GW Baltica 2 offshore wind farm",
+   "milestones": {
+    "baltica-2": {
+     "stage": "FIN",
+     "text": "Final investment decision taken; budget about PLN 30bn",
+     "confidence": "high"
+    }
+   }
+  },
+  "n24": {
+   "project_ids": [
+    "baltica-2"
+   ],
+   "milestones": {
+    "baltica-2": {
+     "stage": "CON",
+     "text": "Offshore installation begins with Van Oord’s monopile campaign",
+     "confidence": "high"
+    }
+   }
+  },
+  "n34": {
+   "project_ids": [
+    "baltica-2"
+   ],
+   "milestones": {
+    "baltica-2": {
+     "stage": "CON",
+     "text": "All 111 monopile foundations installed",
+     "confidence": "high"
+    }
+   }
+  },
+  "y4": {
+   "project_ids": [
+    "baltica-2"
+   ],
+   "milestones": {
+    "baltica-2": {
+     "is_milestone": false,
+     "reason": "Port terminal opening; the article states it will serve Baltica 2 in future"
+    }
+   }
+  },
+  "ic16": {
+   "project_ids": [
+    "baltica-2",
+    "baltica-9"
+   ],
+   "milestones": {
+    "baltica-2": {
+     "is_milestone": false,
+     "reason": "Feature article; no new project decision"
+    },
+    "baltica-9": {
+     "is_milestone": false,
+     "reason": "Feature article; no new project decision"
+    }
+   }
+  },
+  "a7": {
+   "project_ids": [
+    "baltyk-1",
+    "baltic-east",
+    "baltica-9"
+   ],
+   "display_title": "Three offshore wind projects win 3.435 GW of 25-year CfDs in Poland’s first auction",
+   "milestones": {
+    "baltyk-1": {
+     "stage": "AUC",
+     "text": "Wins a 25-year CfD in the first offshore wind auction",
+     "confidence": "high"
+    },
+    "baltic-east": {
+     "stage": "AUC",
+     "text": "Wins a 25-year CfD in the first offshore wind auction (900 MW)",
+     "confidence": "high"
+    },
+    "baltica-9": {
+     "stage": "AUC",
+     "text": "Baltica 9 wins a 25-year CfD in the first offshore wind auction (975 MW)",
+     "confidence": "high"
+    }
+   }
+  },
+  "ic1": {
+   "project_ids": [
+    "baltyk-1"
+   ],
+   "display_title": "Bałtyk 1 applies for environmental approval for its grid connection ahead of the auction",
+   "milestones": {
+    "baltyk-1": {
+     "stage": "PERM",
+     "text": "Environmental approval sought for the grid-connection infrastructure",
+     "confidence": "high"
+    }
+   }
+  },
+  "ic11": {
+   "project_ids": [
+    "baltyk-1"
+   ],
+   "display_title": "Bałtyk 1 wins CfD at PLN 492.32/MWh in the offshore wind auction",
+   "milestones": {
+    "baltyk-1": {
+     "stage": "AUC",
+     "text": "Wins a 25-year CfD at PLN 492.32/MWh",
+     "confidence": "high"
+    }
+   }
+  },
+  "ic12": {
+   "project_ids": [
+    "baltica-9"
+   ],
+   "display_title": "RWE agrees to sell the 350 MW F.E.W. Baltic II project to PGE",
+   "milestones": {
+    "baltica-9": {
+     "stage": "OWN",
+     "text": "RWE agrees to sell F.E.W. Baltic II (350 MW) to PGE",
+     "confidence": "high"
+    }
+   }
+  },
+  "ic14": {
+   "project_ids": [
+    "baltica-9"
+   ],
+   "display_title": "RWE completes sale of F.E.W. Baltic II to PGE",
+   "milestones": {
+    "baltica-9": {
+     "stage": "OWN",
+     "text": "Sale of F.E.W. Baltic II to PGE completed",
+     "confidence": "high"
+    }
+   }
+  },
+  "ic10": {
+   "project_ids": [
+    "bc-wind"
+   ],
+   "display_title": "Ocean Winds reaches ~€2bn financial close for the 390 MW BC-Wind project",
+   "milestones": {
+    "bc-wind": {
+     "stage": "FIN",
+     "text": "Financial close with about €2bn of project finance",
+     "confidence": "high"
+    }
+   }
+  },
+  "h5": {
+   "project_ids": [
+    "zarnowiec-bess"
+   ],
+   "display_title": "PGE plans a 263 MW / 900+ MWh battery at Żarnowiec",
+   "milestones": {
+    "zarnowiec-bess": {
+     "stage": "PLAN",
+     "text": "PGE announces a 263 MW / 900+ MWh battery plan",
+     "confidence": "medium"
+    }
+   }
+  },
+  "h13": {
+   "project_ids": [
+    "zarnowiec-bess"
+   ],
+   "display_title": "PGE signs PLN 1.555bn EPC with LG Energy Solution Wrocław for Żarnowiec BESS",
+   "milestones": {
+    "zarnowiec-bess": {
+     "stage": "PROC",
+     "text": "Turnkey EPC signed with LG Energy Solution Wrocław (PLN 1.555bn gross)",
+     "confidence": "high"
+    }
+   }
+  },
+  "h16": {
+   "project_ids": [
+    "zarnowiec-bess"
+   ],
+   "display_title": "Construction starts on PGE’s 263 MW Żarnowiec battery",
+   "milestones": {
+    "zarnowiec-bess": {
+     "stage": "CON",
+     "text": "Construction starts",
+     "confidence": "high"
+    }
+   }
+  },
+  "b1": {
+   "project_ids": [
+    "zarnowiec-bess"
+   ],
+   "milestones": {
+    "zarnowiec-bess": {
+     "stage": "CON",
+     "text": "Battery reported near commissioning",
+     "confidence": "medium"
+    }
+   }
+  },
+  "h3": {
+   "project_ids": [
+    "grudziadz-ccgt"
+   ],
+   "display_title": "Gas turbine delivered to the Grudziądz CCGT site",
+   "milestones": {
+    "grudziadz-ccgt": {
+     "stage": "CON",
+     "text": "300-tonne gas turbine delivered to site; progress above 70%",
+     "confidence": "high"
+    }
+   }
+  },
+  "h7": {
+   "project_ids": [
+    "grudziadz-ccgt"
+   ],
+   "display_title": "Turbine-unit installation starts at Grudziądz CCGT",
+   "milestones": {
+    "grudziadz-ccgt": {
+     "stage": "CON",
+     "text": "Turbine-unit installation begins; progress near 80%",
+     "confidence": "high"
+    }
+   }
+  },
+  "n11": {
+   "project_ids": [
+    "grudziadz-ccgt",
+    "ostroleka-ccgt"
+   ],
+   "milestones": {
+    "grudziadz-ccgt": {
+     "stage": "DELAY",
+     "text": "Contractual operational milestone missed",
+     "confidence": "high"
+    },
+    "ostroleka-ccgt": {
+     "stage": "DELAY",
+     "text": "Contractual operational milestone missed",
+     "confidence": "high"
+    }
+   }
+  },
+  "n10": {
+   "project_ids": [
+    "grudziadz-ccgt"
+   ],
+   "milestones": {
+    "grudziadz-ccgt": {
+     "stage": "COM",
+     "text": "First electricity delivered to the national grid",
+     "confidence": "high"
+    }
+   }
+  },
+  "h15": {
+   "project_ids": [
+    "grudziadz-ccgt-2"
+   ],
+   "display_title": "Energa signs PLN 3.1bn EPC with Siemens Energy for a second Grudziądz CCGT unit",
+   "milestones": {
+    "grudziadz-ccgt-2": {
+     "stage": "PROC",
+     "text": "PLN 3.1bn turnkey EPC signed with Siemens Energy",
+     "confidence": "high"
+    }
+   }
+  },
+  "b3": {
+   "project_ids": [
+    "grudziadz-bess"
+   ],
+   "milestones": {
+    "grudziadz-bess": {
+     "stage": "PROC",
+     "text": "EMS/SCADA integrator tender launched",
+     "confidence": "high"
+    }
+   }
+  },
+  "h11": {
+   "project_ids": [
+    "ostroleka-ccgt"
+   ],
+   "milestones": {
+    "ostroleka-ccgt": {
+     "stage": "CON",
+     "text": "Turbine set and heat-recovery steam generator installed during 2024",
+     "confidence": "medium"
+    }
+   }
+  },
+  "h17": {
+   "project_ids": [
+    "ostroleka-ccgt"
+   ],
+   "display_title": "Cold commissioning starts at Ostrołęka CCGT",
+   "milestones": {
+    "ostroleka-ccgt": {
+     "stage": "COM",
+     "text": "Cold commissioning starts after 110 kV energisation",
+     "confidence": "high"
+    }
+   }
+  },
+  "e4": {
+   "project_ids": [
+    "ostroleka-ccgt"
+   ],
+   "milestones": {
+    "ostroleka-ccgt": {
+     "stage": "DELAY",
+     "text": "Contract annex resets the operational milestone to March 2027",
+     "confidence": "high"
+    }
+   }
+  },
+  "n9": {
+   "project_ids": [
+    "kozienice-ccgt"
+   ],
+   "milestones": {
+    "kozienice-ccgt": {
+     "stage": "FIN",
+     "text": "PLN 6.95bn project financing secured",
+     "confidence": "medium"
+    }
+   }
+  },
+  "n8": {
+   "project_ids": [
+    "kozienice-ccgt"
+   ],
+   "milestones": {
+    "kozienice-ccgt": {
+     "stage": "CON",
+     "text": "Construction starts with Çalık Enerji",
+     "confidence": "high"
+    }
+   }
+  },
+  "m7": {
+   "project_ids": [
+    "kozienice-bess"
+   ],
+   "milestones": {
+    "kozienice-bess": {
+     "stage": "OWN",
+     "text": "DRI acquires the ready-to-build project from Greenvolt",
+     "confidence": "high"
+    }
+   }
+  },
+  "o5": {
+   "project_ids": [
+    "kozienice-bess"
+   ],
+   "milestones": {
+    "kozienice-bess": {
+     "stage": "OWN",
+     "text": "Actis acquires the project from DRI",
+     "confidence": "high"
+    }
+   }
+  },
+  "n6": {
+   "project_ids": [
+    "jaworzno-ocgt"
+   ],
+   "milestones": {
+    "jaworzno-ocgt": {
+     "stage": "FIN",
+     "text": "TAURON decides to build after winning a 15-year capacity contract",
+     "confidence": "high"
+    }
+   }
+  },
+  "n32": {
+   "project_ids": [
+    "jaworzno-ocgt"
+   ],
+   "display_title": "TAURON signs €293m Ansaldo Energia contract for the Jaworzno OCGT turbine island",
+   "milestones": {
+    "jaworzno-ocgt": {
+     "stage": "PROC",
+     "text": "€293m turbine-island contract signed with Ansaldo Energia",
+     "confidence": "high"
+    }
+   }
+  },
+  "n2": {
+   "project_ids": [
+    "rybnik-ocgt"
+   ],
+   "milestones": {
+    "rybnik-ocgt": {
+     "stage": "PROC",
+     "text": "Turnkey procurement launched for a ~600 MW peaking plant",
+     "confidence": "medium"
+    }
+   }
+  },
+  "n3": {
+   "project_ids": [
+    "rybnik-ocgt",
+    "gryfino-ocgt"
+   ],
+   "milestones": {
+    "rybnik-ocgt": {
+     "stage": "PROC",
+     "text": "Polimex-Mostostal–Siemens Energy consortium selected as contractor",
+     "confidence": "high"
+    },
+    "gryfino-ocgt": {
+     "stage": "PROC",
+     "text": "Polimex-Mostostal–Siemens Energy consortium selected as contractor",
+     "confidence": "high"
+    }
+   }
+  },
+  "n20": {
+   "project_ids": [
+    "rybnik-ocgt",
+    "gryfino-ocgt"
+   ],
+   "milestones": {
+    "rybnik-ocgt": {
+     "stage": "PROC",
+     "text": "EPC and 12-year service contracts signed",
+     "confidence": "high"
+    },
+    "gryfino-ocgt": {
+     "stage": "PROC",
+     "text": "EPC and service contracts signed on the same structure as Rybnik",
+     "confidence": "medium"
+    }
+   }
+  },
+  "n35": {
+   "project_ids": [
+    "gdansk-ccgt"
+   ],
+   "milestones": {
+    "gdansk-ccgt": {
+     "stage": "CON",
+     "text": "Construction under way with Polimex-Mostostal and Siemens Energy on site",
+     "confidence": "medium"
+    }
+   }
+  },
+  "w3": {
+   "project_ids": [
+    "gdansk-ccgt"
+   ],
+   "milestones": {
+    "gdansk-ccgt": {
+     "stage": "CON",
+     "text": "Foundation slabs for the main equipment completed",
+     "confidence": "high"
+    }
+   }
+  },
+  "h14": {
+   "project_ids": [
+    "wloclawek-smr"
+   ],
+   "display_title": "ORLEN and Synthos reset OSGE governance and name Włocławek the first BWRX-300 site",
+   "milestones": {
+    "wloclawek-smr": {
+     "stage": "PLAN",
+     "text": "Włocławek designated the first BWRX-300 project site",
+     "confidence": "high"
+    }
+   }
+  },
+  "nu7": {
+   "project_ids": [
+    "wloclawek-smr"
+   ],
+   "milestones": {
+    "wloclawek-smr": {
+     "stage": "PLAN",
+     "text": "Cooperation agreement signed with the City of Włocławek for up to six units",
+     "confidence": "high"
+    }
+   }
+  },
+  "nu6": {
+   "project_ids": [
+    "wloclawek-smr"
+   ],
+   "milestones": {
+    "wloclawek-smr": {
+     "stage": "AUC",
+     "text": "CfD application filed for 14 BWRX-300 units, including Włocławek",
+     "confidence": "high"
+    }
+   }
+  },
+  "w2": {
+   "project_ids": [
+    "wloclawek-smr"
+   ],
+   "milestones": {
+    "wloclawek-smr": {
+     "stage": "OWN",
+     "text": "ORLEN to lead the project under a new OSGE framework",
+     "confidence": "high"
+    }
+   }
+  },
+  "h20": {
+   "project_ids": [
+    "patnow-smr"
+   ],
+   "display_title": "ZE PAK concludes shareholders’ agreement for the Pątnów SMR project",
+   "milestones": {
+    "patnow-smr": {
+     "stage": "OWN",
+     "text": "Shareholders’ agreement concluded for the project",
+     "confidence": "medium"
+    }
+   }
+  },
+  "o1": {
+   "project_ids": [
+    "second-npp"
+   ],
+   "milestones": {
+    "second-npp": {
+     "stage": "PLAN",
+     "text": "Roles agreed: PEJ as investor, PGE leads siting (Bełchatów / Konin)",
+     "confidence": "high"
+    }
+   }
+  },
+  "o3": {
+   "project_ids": [
+    "harmony-link"
+   ],
+   "milestones": {
+    "harmony-link": {
+     "stage": "PROC",
+     "text": "PSE and Litgrid sign the connection-point agreement",
+     "confidence": "high"
+    }
+   }
+  }
+ }
+}

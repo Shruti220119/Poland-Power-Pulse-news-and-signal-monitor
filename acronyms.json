@@ -1,0 +1,109 @@
+{
+ "acronyms": {
+  "URE": {
+   "pl": "Urząd Regulacji Energetyki",
+   "en": "Energy Regulatory Office"
+  },
+  "PSE": {
+   "pl": "Polskie Sieci Elektroenergetyczne",
+   "en": "Polish transmission system operator"
+  },
+  "PEJ": {
+   "pl": "Polskie Elektrownie Jądrowe",
+   "en": "Polish Nuclear Power Plants"
+  },
+  "OSP": {
+   "pl": "Operator Systemu Przesyłowego",
+   "en": "Transmission System Operator"
+  },
+  "OSD": {
+   "pl": "Operator Systemu Dystrybucyjnego",
+   "en": "Distribution System Operator"
+  },
+  "TSO": {
+   "en": "Transmission System Operator"
+  },
+  "DSO": {
+   "en": "Distribution System Operator"
+  },
+  "BESS": {
+   "en": "Battery Energy Storage System"
+  },
+  "CCGT": {
+   "en": "Combined-Cycle Gas Turbine"
+  },
+  "OCGT": {
+   "en": "Open-Cycle Gas Turbine"
+  },
+  "CHP": {
+   "en": "Combined Heat and Power"
+  },
+  "SMR": {
+   "en": "Small Modular Reactor"
+  },
+  "NPP": {
+   "en": "Nuclear Power Plant"
+  },
+  "FID": {
+   "en": "Final Investment Decision"
+  },
+  "CfD": {
+   "en": "Contract for Difference",
+   "aliases": [
+    "CFD"
+   ]
+  },
+  "EPC": {
+   "en": "Engineering, Procurement and Construction"
+  },
+  "PAA": {
+   "pl": "Państwowa Agencja Atomistyki",
+   "en": "National Atomic Energy Agency"
+  },
+  "NFOŚiGW": {
+   "pl": "Narodowy Fundusz Ochrony Środowiska i Gospodarki Wodnej",
+   "en": "National Fund for Environmental Protection and Water Management"
+  },
+  "KPO": {
+   "pl": "Krajowy Plan Odbudowy",
+   "en": "Poland’s National Recovery and Resilience Plan"
+  },
+  "TGE": {
+   "pl": "Towarowa Giełda Energii",
+   "en": "Polish Power Exchange"
+  },
+  "CSIRE": {
+   "pl": "Centralny System Informacji Rynku Energii",
+   "en": "Central Energy Market Information System"
+  },
+  "OZE": {
+   "pl": "Odnawialne Źródła Energii",
+   "en": "Renewable energy sources"
+  },
+  "GDOŚ": {
+   "pl": "Generalna Dyrekcja Ochrony Środowiska",
+   "en": "General Directorate for Environmental Protection"
+  },
+  "UOKiK": {
+   "pl": "Urząd Ochrony Konkurencji i Konsumentów",
+   "en": "Office of Competition and Consumer Protection"
+  },
+  "BGK": {
+   "pl": "Bank Gospodarstwa Krajowego",
+   "en": "Polish state development bank"
+  },
+  "EIB": {
+   "en": "European Investment Bank"
+  },
+  "PPA": {
+   "en": "Power Purchase Agreement"
+  },
+  "NECP": {
+   "en": "National Energy and Climate Plan"
+  },
+  "KPEiK": {
+   "pl": "Krajowy Plan w dziedzinie Energii i Klimatu",
+   "en": "National Energy and Climate Plan"
+  }
+ }
+}

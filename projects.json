@@ -1,0 +1,804 @@
+{
+ "projects": {
+  "lubiatowo-kopalino-npp": {
+   "name": "Lubiatowo-Kopalino NPP",
+   "owners": [
+    "PEJ"
+   ],
+   "partners": [
+    "Westinghouse",
+    "Bechtel"
+   ],
+   "technology": [
+    "nuclear"
+   ],
+   "region": "Pomerania",
+   "capacity": "3 × AP1000 (1,250 MWe each) = 3,750 MWe",
+   "capacity_source": "https://pej.pl/en/the-project/key-information/",
+   "asset_tags": [
+    "Lubiatowo-Kopalino NPP"
+   ],
+   "aliases": [
+    "Lubiatowo-Kopalino",
+    "Lubiatowo Kopalino",
+    "Lubiatowo",
+    "Choczewo nuclear",
+    "first Polish nuclear plant",
+    "first Polish nuclear power plant",
+    "Poland's first nuclear power plant",
+    "Poland’s first nuclear power plant",
+    "first nuclear power plant in Poland",
+    "PEJ AP1000",
+    "AP1000 Pomerania",
+    "pierwsza elektrownia jądrowa",
+    "pierwszej elektrowni jądrowej"
+   ],
+   "context": [
+    {
+     "term": "Westinghouse",
+     "requires_any": [
+      "AP1000",
+      "Polish plant",
+      "Polish nuclear",
+      "PEJ",
+      "Pomerania",
+      "Poland's first",
+      "Poland’s first"
+     ],
+     "excludes_any": [
+      "second nuclear",
+      "second Polish",
+      "Ukraine",
+      "Czech",
+      "Bulgaria"
+     ]
+    },
+    {
+     "term": "AP1000",
+     "requires_any": [
+      "Poland",
+      "Polish",
+      "PEJ",
+      "Pomerania"
+     ],
+     "excludes_any": [
+      "second nuclear",
+      "second Polish"
+     ]
+    }
+   ],
+   "exclude_any": [
+    "second nuclear",
+    "second Polish nuclear",
+    "drugiej elektrowni",
+    "druga elektrownia",
+    "EJ2",
+    "BWRX",
+    "Pątnów"
+   ]
+  },
+  "baltic-power": {
+   "name": "Baltic Power",
+   "owners": [
+    "ORLEN",
+    "Northland Power"
+   ],
+   "partners": [
+    "ORLEN Neptun"
+   ],
+   "technology": [
+    "offshore"
+   ],
+   "region": "Baltic Sea",
+   "capacity": "1.14 GW (76 × Vestas 15 MW)",
+   "capacity_source": "https://northlandpower.com/northlands-baltic-power-offshore-wind-project-completes-installation-of-all-76-turbines/",
+   "asset_tags": [
+    "Baltic Power"
+   ],
+   "aliases": [
+    "Baltic Power"
+   ],
+   "context": [],
+   "exclude_any": []
+  },
+  "baltyk-2-3": {
+   "name": "Bałtyk 2 & 3",
+   "owners": [
+    "Polenergia",
+    "Equinor"
+   ],
+   "partners": [],
+   "technology": [
+    "offshore"
+   ],
+   "region": "Baltic Sea",
+   "capacity": "Bałtyk 2 720 MW + Bałtyk 3 720 MW = 1,440 MW",
+   "capacity_source": "https://www.polenergia.pl/en/raporty_biezace/making-final-investment-decisions-on-the-implementation-of-offshore-wind-farm-projects-fid/",
+   "asset_tags": [
+    "Bałtyk 2 & 3"
+   ],
+   "aliases": [
+    "Bałtyk 2",
+    "Bałtyk 3",
+    "Bałtyk II",
+    "Bałtyk III",
+    "MFW Bałtyk II",
+    "MFW Bałtyk III",
+    "Baltyk 2",
+    "Baltyk 3"
+   ],
+   "context": [],
+   "exclude_any": []
+  },
+  "baltyk-1": {
+   "name": "Bałtyk 1",
+   "owners": [
+    "Polenergia",
+    "Equinor"
+   ],
+   "partners": [],
+   "technology": [
+    "offshore"
+   ],
+   "region": "Baltic Sea",
+   "capacity": "1,560 MW",
+   "capacity_source": "https://www.polenergia.pl/en/raporty_biezace/offshore-wind-farms-auction-results/",
+   "asset_tags": [
+    "Bałtyk 1"
+   ],
+   "aliases": [
+    "Bałtyk 1",
+    "Bałtyk I",
+    "MFW Bałtyk I",
+    "Baltyk 1"
+   ],
+   "context": [],
+   "exclude_any": []
+  },
+  "baltica-2": {
+   "name": "Baltica 2",
+   "owners": [
+    "PGE",
+    "Ørsted"
+   ],
+   "partners": [
+    "Van Oord",
+    "Siemens Gamesa"
+   ],
+   "technology": [
+    "offshore"
+   ],
+   "region": "Baltic Sea",
+   "capacity": "Up to 1,498 MW (~1.5 GW)",
+   "capacity_source": "https://www.gkpge.pl/en/for-investors/current-reports/adoption-of-the-final-investment-decision-concerning-the-baltica-2-project",
+   "asset_tags": [
+    "Baltica 2",
+    "Baltica 2 (~1.5 GW)"
+   ],
+   "aliases": [
+    "Baltica 2",
+    "Baltica-2",
+    "Baltica II"
+   ],
+   "context": [],
+   "exclude_any": []
+  },
+  "baltica-9": {
+   "name": "Baltica 9 / F.E.W. Baltic II",
+   "owners": [
+    "PGE"
+   ],
+   "partners": [],
+   "technology": [
+    "offshore"
+   ],
+   "region": "Baltic Sea",
+   "capacity": "Baltica 9: 975 MW; F.E.W. Baltic II: 350 MW",
+   "capacity_source": "https://www.ure.gov.pl/en/communication/news/486,Offshore-First-auction-for-offshore-wind-farms-concluded.html",
+   "asset_tags": [
+    "Baltica 9",
+    "F.E.W. Baltic II"
+   ],
+   "aliases": [
+    "Baltica 9",
+    "F.E.W. Baltic II",
+    "FEW Baltic II",
+    "F.E.W. Baltic"
+   ],
+   "context": [],
+   "exclude_any": []
+  },
+  "baltic-east": {
+   "name": "Baltic East",
+   "owners": [
+    "ORLEN"
+   ],
+   "partners": [],
+   "technology": [
+    "offshore"
+   ],
+   "region": "Baltic Sea",
+   "capacity": "900 MW",
+   "capacity_source": "https://www.ure.gov.pl/en/communication/news/486,Offshore-First-auction-for-offshore-wind-farms-concluded.html",
+   "asset_tags": [
+    "Baltic East"
+   ],
+   "aliases": [
+    "Baltic East"
+   ],
+   "context": [],
+   "exclude_any": []
+  },
+  "bc-wind": {
+   "name": "BC-Wind",
+   "owners": [
+    "Ocean Winds"
+   ],
+   "partners": [
+    "EDPR",
+    "ENGIE"
+   ],
+   "technology": [
+    "offshore"
+   ],
+   "region": "Baltic Sea",
+   "capacity": "390 MW",
+   "capacity_source": "https://www.oceanwinds.com/news/uncategorized/ocean-winds-has-reached-financial-close-for-its-bc-wind-project-in-poland/",
+   "asset_tags": [
+    "BC-Wind"
+   ],
+   "aliases": [
+    "BC-Wind",
+    "BC Wind"
+   ],
+   "context": [],
+   "exclude_any": []
+  },
+  "zarnowiec-bess": {
+   "name": "Żarnowiec BESS",
+   "owners": [
+    "PGE"
+   ],
+   "partners": [
+    "LG Energy Solution Wrocław"
+   ],
+   "technology": [
+    "bess"
+   ],
+   "region": "Pomerania",
+   "capacity": "262 MW / ~981 MWh",
+   "capacity_source": "https://www.gkpge.pl/en/for-investors/current-reports/signing-of-the-agreement-for-construction-of-an-energy-storage-facility-in-zarnowiec",
+   "asset_tags": [
+    "Żarnowiec BESS"
+   ],
+   "aliases": [
+    "Żarnowiec BESS",
+    "BESS Żarnowiec",
+    "Zarnowiec battery",
+    "Żarnowiec battery"
+   ],
+   "context": [
+    {
+     "term": "Żarnowiec",
+     "requires_any": [
+      "battery",
+      "BESS",
+      "energy storage",
+      "storage facility",
+      "magazyn"
+     ],
+     "excludes_any": [
+      "pumped-storage upgrade",
+      "nuclear"
+     ]
+    }
+   ],
+   "exclude_any": []
+  },
+  "grudziadz-ccgt": {
+   "name": "Grudziądz CCGT (unit 1)",
+   "owners": [
+    "Energa",
+    "ORLEN"
+   ],
+   "partners": [
+    "Siemens Energy",
+    "Mytilineos"
+   ],
+   "technology": [
+    "gas"
+   ],
+   "region": "Kuyavia-Pomerania",
+   "capacity": "560 MW",
+   "capacity_source": "https://www.orlen.pl/en/about-the-company/media/press-releases/archive/2023/May-2023/ORLEN-Group-invests-in-advanced-and-stable-power-generation",
+   "asset_tags": [
+    "Grudziądz CCGT"
+   ],
+   "aliases": [
+    "CCGT Grudziądz",
+    "Grudziądz CCGT",
+    "CCGT Grudziądz 1",
+    "Grudziądz 1"
+   ],
+   "context": [],
+   "exclude_any": [
+    "BESS",
+    "battery",
+    "magazyn",
+    "second gas-steam",
+    "Grudziądz II",
+    "Grudziądz 2",
+    "second unit"
+   ]
+  },
+  "grudziadz-ccgt-2": {
+   "name": "Grudziądz CCGT (unit 2)",
+   "owners": [
+    "Energa",
+    "ORLEN"
+   ],
+   "partners": [
+    "Siemens Energy"
+   ],
+   "technology": [
+    "gas"
+   ],
+   "region": "Kuyavia-Pomerania",
+   "capacity": "560 MW",
+   "capacity_source": "https://ir.energa.pl/en/pr/857741/conclusion-of-an-agreement-with-the-general-contractor-for-the-construction-of-the-second-gas-steam-unit-ccgt-in-grudziadz",
+   "asset_tags": [],
+   "aliases": [
+    "Grudziądz II",
+    "CCGT Grudziądz 2",
+    "Grudziądz 2"
+   ],
+   "context": [
+    {
+     "term": "Grudziądz",
+     "requires_any": [
+      "second gas-steam",
+      "second CCGT",
+      "second unit"
+     ],
+     "excludes_any": [
+      "BESS",
+      "battery"
+     ]
+    }
+   ],
+   "exclude_any": []
+  },
+  "grudziadz-bess": {
+   "name": "Grudziądz BESS",
+   "owners": [
+    "Energa",
+    "ORLEN"
+   ],
+   "partners": [],
+   "technology": [
+    "bess"
+   ],
+   "region": "Kuyavia-Pomerania",
+   "capacity": "47 MW",
+   "capacity_source": "https://energastorage.pl/ogloszenie-przetargu-nr-PKN_2_003357_26",
+   "asset_tags": [
+    "Grudziądz BESS"
+   ],
+   "aliases": [
+    "BESS Grudziądz",
+    "Grudziądz BESS"
+   ],
+   "context": [
+    {
+     "term": "Grudziądz",
+     "requires_any": [
+      "battery",
+      "BESS",
+      "magazyn"
+     ],
+     "excludes_any": [
+      "CCGT",
+      "gas-steam"
+     ]
+    }
+   ],
+   "exclude_any": []
+  },
+  "ostroleka-ccgt": {
+   "name": "Ostrołęka CCGT",
+   "owners": [
+    "Energa",
+    "ORLEN"
+   ],
+   "partners": [
+    "GE Vernova"
+   ],
+   "technology": [
+    "gas"
+   ],
+   "region": "Masovia",
+   "capacity": "745 MWe (net) per Energa current report",
+   "capacity_source": "https://ir.energa.pl/en/pr/821106/changes-regarding-the-implementation-of-construction-project-of-ccgt-power-plant-in-ostroleka",
+   "asset_tags": [
+    "Ostrołęka CCGT"
+   ],
+   "aliases": [
+    "Ostrołęka CCGT",
+    "CCGT Ostrołęka",
+    "Ostrołęka"
+   ],
+   "context": [],
+   "exclude_any": []
+  },
+  "kozienice-ccgt": {
+   "name": "Kozienice CCGT",
+   "owners": [
+    "Enea"
+   ],
+   "partners": [
+    "Çalık Enerji"
+   ],
+   "technology": [
+    "gas"
+   ],
+   "region": "Masovia",
+   "capacity": "2 × 668 MWe = 1,336 MWe",
+   "capacity_source": "https://ir.enea.pl/en/pr/862404/nearly-pln-6-5-billion-in-syndicated-loan-for-enea-for-the-constrution-of-combined-cycle-gas-turbine-units-in-kozienice",
+   "asset_tags": [
+    "Kozienice CCGT"
+   ],
+   "aliases": [
+    "Kozienice CCGT",
+    "CCGT Kozienice",
+    "Enea Elkogaz",
+    "Elkogaz"
+   ],
+   "context": [
+    {
+     "term": "Kozienice",
+     "requires_any": [
+      "CCGT",
+      "gas-steam",
+      "gazowo-parow",
+      "gas investment",
+      "gazow",
+      "668 MW",
+      "1,336 MW"
+     ],
+     "excludes_any": [
+      "battery",
+      "BESS",
+      "storage",
+      "magazyn",
+      "coal",
+      "węgl",
+      "drought"
+     ]
+    }
+   ],
+   "exclude_any": []
+  },
+  "kozienice-bess": {
+   "name": "Kozienice BESS (DRI / Actis, 112 MW)",
+   "owners": [
+    "Actis"
+   ],
+   "partners": [
+    "DRI",
+    "Greenvolt"
+   ],
+   "technology": [
+    "bess"
+   ],
+   "region": "Masovia",
+   "capacity": "112 MW / 518 MWh (Actis) — 448 MWh per DRI",
+   "capacity_source": "https://www.act.is/2026/10/06/actis-adds-244mw-1141mwh-battery-storage-portfolio-to-polish-platform-within-three-months-of-launch/",
+   "asset_tags": [
+    "Kozienice BESS (DRI / Actis, 112 MW)"
+   ],
+   "aliases": [],
+   "context": [
+    {
+     "term": "Kozienice",
+     "requires_any": [
+      "battery",
+      "BESS",
+      "energy storage",
+      "magazyn"
+     ],
+     "excludes_any": [
+      "CCGT",
+      "gas-steam",
+      "232 MW",
+      "Enea plans"
+     ]
+    }
+   ],
+   "exclude_any": []
+  },
+  "jaworzno-ocgt": {
+   "name": "Jaworzno OCGT",
+   "owners": [
+    "TAURON"
+   ],
+   "partners": [
+    "Ansaldo Energia"
+   ],
+   "technology": [
+    "gas"
+   ],
+   "region": "Silesia",
+   "capacity": "~600 MWe (2 × 314.6 MW turbines)",
+   "capacity_source": "https://media.tauron.pl/pr/862141/tauron-wybuduje-jednostke-szczytowa-typu-ocgt-w-jaworznie-ze-wsparciem-z-rynku-mocy",
+   "asset_tags": [
+    "Jaworzno OCGT"
+   ],
+   "aliases": [
+    "Jaworzno OCGT",
+    "OCGT Jaworzno"
+   ],
+   "context": [
+    {
+     "term": "Jaworzno",
+     "requires_any": [
+      "OCGT",
+      "peaking",
+      "peaker",
+      "szczytow",
+      "open-cycle",
+      "turbine island",
+      "gas turbines",
+      "turbin gazowych"
+     ],
+     "excludes_any": [
+      "910 MW",
+      "heat source",
+      "źródło ciepła",
+      "źródła ciepła"
+     ]
+    }
+   ],
+   "exclude_any": []
+  },
+  "rybnik-ocgt": {
+   "name": "Rybnik OCGT",
+   "owners": [
+    "PGE"
+   ],
+   "partners": [
+    "Polimex Mostostal",
+    "Siemens Energy"
+   ],
+   "technology": [
+    "gas"
+   ],
+   "region": "Silesia",
+   "capacity": "~588–600 MWe",
+   "capacity_source": "https://www.gkpge.pl/en/for-investors/current-reports/signing-of-the-agreements-for-construction-of-the-gas-fired-units-in-rybnik-and-in-gryfino",
+   "asset_tags": [
+    "Rybnik OCGT"
+   ],
+   "aliases": [
+    "Rybnik OCGT"
+   ],
+   "context": [
+    {
+     "term": "Rybnik",
+     "requires_any": [
+      "OCGT",
+      "peaking",
+      "peaker",
+      "szczytow",
+      "open-cycle",
+      "gas-fired"
+     ],
+     "excludes_any": []
+    }
+   ],
+   "exclude_any": []
+  },
+  "gryfino-ocgt": {
+   "name": "Gryfino OCGT",
+   "owners": [
+    "PGE"
+   ],
+   "partners": [
+    "Polimex Mostostal",
+    "Siemens Energy"
+   ],
+   "technology": [
+    "gas"
+   ],
+   "region": "West Pomerania",
+   "capacity": "~588 MW",
+   "capacity_source": "https://www.gkpge.pl/grupa-pge/dla-mediow/komunikaty-prasowe/korporacyjne/pge-wybrala-wykonawce-szczytowych-elektrowni-gazowych-w-rybniku-oraz-gryfinie",
+   "asset_tags": [
+    "Gryfino OCGT"
+   ],
+   "aliases": [
+    "Gryfino OCGT"
+   ],
+   "context": [
+    {
+     "term": "Gryfino",
+     "requires_any": [
+      "OCGT",
+      "peaking",
+      "peaker",
+      "szczytow",
+      "open-cycle"
+     ],
+     "excludes_any": [
+      "Dolna Odra",
+      "1,366",
+      "BESS",
+      "battery"
+     ]
+    }
+   ],
+   "exclude_any": []
+  },
+  "gdansk-ccgt": {
+   "name": "Gdańsk CCGT",
+   "owners": [
+    "Energa",
+    "ORLEN"
+   ],
+   "partners": [
+    "Polimex Mostostal",
+    "Siemens Energy"
+   ],
+   "technology": [
+    "gas"
+   ],
+   "region": "Pomerania",
+   "capacity": "560 MW",
+   "capacity_source": "https://www.wnp.pl/energia/orlen-rusza-z-budowa-bloku-parowo-gazowego-w-gdansku,1010591.html",
+   "asset_tags": [
+    "Gdańsk CCGT"
+   ],
+   "aliases": [
+    "Gdańsk CCGT",
+    "CCGT Gdańsk"
+   ],
+   "context": [
+    {
+     "term": "Gdańsk",
+     "requires_any": [
+      "CCGT",
+      "gas-steam",
+      "parowo-gazow",
+      "gazowo-parow",
+      "combined-cycle"
+     ],
+     "excludes_any": [
+      "LNG",
+      "FSRU",
+      "terminal",
+      "port",
+      "T5"
+     ]
+    }
+   ],
+   "exclude_any": []
+  },
+  "wloclawek-smr": {
+   "name": "Włocławek SMR",
+   "owners": [
+    "ORLEN",
+    "OSGE"
+   ],
+   "partners": [
+    "GE Vernova Hitachi"
+   ],
+   "technology": [
+    "nuclear"
+   ],
+   "region": "Kuyavia-Pomerania",
+   "capacity": "Up to 6 × BWRX-300 (300 MWe each) = up to 1,800 MWe",
+   "capacity_source": "https://www.world-nuclear-news.org/articles/osge-signs-agreement-with-wloclawek-for-smr-plant",
+   "asset_tags": [
+    "Włocławek SMR"
+   ],
+   "aliases": [
+    "Włocławek SMR"
+   ],
+   "context": [
+    {
+     "term": "Włocławek",
+     "requires_any": [
+      "SMR",
+      "BWRX",
+      "nuclear",
+      "jądrow",
+      "reactor"
+     ],
+     "excludes_any": []
+    }
+   ],
+   "exclude_any": []
+  },
+  "patnow-smr": {
+   "name": "Pątnów SMR",
+   "owners": [
+    "ZE PAK"
+   ],
+   "partners": [],
+   "technology": [
+    "nuclear"
+   ],
+   "region": "Greater Poland",
+   "capacity": "Up to 6 × BWRX-300 (300 MWe each) = up to 1,800 MWe",
+   "capacity_source": "https://www.world-nuclear-news.org/articles/joint-venture-formed-for-six-unit-smr-plant-in-poland",
+   "asset_tags": [
+    "Pątnów SMR"
+   ],
+   "aliases": [
+    "Pątnów SMR"
+   ],
+   "context": [
+    {
+     "term": "Pątnów",
+     "requires_any": [
+      "SMR",
+      "BWRX",
+      "nuclear",
+      "jądrow"
+     ],
+     "excludes_any": []
+    }
+   ],
+   "exclude_any": []
+  },
+  "second-npp": {
+   "name": "Second NPP (Bełchatów / Konin sites)",
+   "owners": [
+    "PEJ",
+    "PGE"
+   ],
+   "partners": [],
+   "technology": [
+    "nuclear"
+   ],
+   "region": "Łódź · Greater Poland",
+   "capacity": "Not yet stated",
+   "capacity_source": "",
+   "asset_tags": [
+    "Second NPP (Bełchatów / Konin sites)"
+   ],
+   "aliases": [
+    "second nuclear power plant",
+    "second nuclear plant",
+    "second Polish nuclear",
+    "second nuclear power station",
+    "EJ2",
+    "druga elektrownia jądrowa",
+    "drugiej elektrowni jądrowej"
+   ],
+   "context": [],
+   "exclude_any": []
+  },
+  "harmony-link": {
+   "name": "Harmony Link",
+   "owners": [
+    "PSE",
+    "Litgrid"
+   ],
+   "partners": [],
+   "technology": [
+    "grid"
+   ],
+   "region": "Podlaskie · Lithuania",
+   "capacity": "220 kV interconnector",
+   "capacity_source": "https://litgrid.eu/en/news/litgrid-and-pse-signed-connection-point-agreement-for-the-harmony-link-lithuania-poland-electricity-interconnector",
+   "asset_tags": [
+    "Harmony Link"
+   ],
+   "aliases": [
+    "Harmony Link"
+   ],
+   "context": [],
+   "exclude_any": []
+  }
+ }
+}
