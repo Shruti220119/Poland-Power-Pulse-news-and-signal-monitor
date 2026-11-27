@@ -92,6 +92,7 @@ SOURCES = [
     ("Energa Storage", "energastorage.pl", "official", "pl", "pl-official2"),
     ("Energa-Operator", "energa-operator.pl", "official", "pl", "pl-official2"),
     ("VSB Energie Odnawialne Polska", "vsb.energy", "official", "pl", "pl-official2"),
+    ("OSGE (ORLEN Synthos Green Energy)", "osge.com", "official", "pl", "pl-official2"),          # v10
     ("URE", "ure.gov.pl", "official", "pl", "pl-gov"),
     ("PSE", "pse.pl", "official", "pl", "pl-gov"),
     ("Ministry of Energy", "gov.pl/web/energia", "official", "pl", "pl-gov"),
@@ -123,6 +124,8 @@ SOURCES = [
     ("EXIM", "exim.gov", "official", "en", "int-official3"),
     ("European Commission", "ec.europa.eu", "official", "en", "int-official3"),
     ("EUR-Lex (Official Journal of the EU)", "eur-lex.europa.eu", "official", "en", "int-official3"),
+    ("Better Energy", "betterenergy.com", "official", "en", "int-official3"),                    # v10
+    ("Enefit", "enefit.com", "official", "en", "int-official3"),                                 # v10
     ("Bankier.pl (ZE PAK ESPI report)", "bankier.pl", "general", "pl", "pl-press"),
     # Polish press / associations
     ("PAP Biznes", "biznes.pap.pl", "specialist", "pl", "pl-press"),
@@ -230,9 +233,6 @@ NOT_MONITORED = [
     ("TED — EU tenders", "Procurement database - needs the TED Search API, not a news page"),
     ("e-Zamówienia / BZP", "Procurement database - needs its own API, not a news page"),
     ("Sejm API & ELI", "Legislative database - the Sejm news pages are read instead"),
-    ("OSGE (ORLEN Synthos Green Energy)", "Website address not confirmed - add it to SOURCES once known"),
-    ("Enefit", "Website address not confirmed - add it to SOURCES once known"),
-    ("Better Energy", "Website address not confirmed - add it to SOURCES once known"),
 ]
 
 # v9: news / press / current-report pages to read for a site. Sites not listed here start from their
@@ -263,6 +263,9 @@ NEWS_PAGES = {
     "tge.pl": ["https://tge.pl/aktualnosci"],
     "gpw.pl": ["https://www.gpw.pl/komunikaty"],
     "sejm.gov.pl": ["https://www.sejm.gov.pl/"],
+    "osge.com": ["https://osge.com/en/"],                                                        # v10
+    "betterenergy.com": ["https://betterenergy.com/"],                                           # v10
+    "enefit.com": ["https://www.enefit.com/en"],                                                 # v10
 }
 NAV = re.compile(r"cookie|privacy|prywatno|polityka|regulamin|kontakt|contact|login|zaloguj|newsletter|kariera|career|"
                  r"sitemap|mapa strony|\brss\b|facebook|linkedin|twitter|youtube|instagram|deklaracja dost|accessibility", re.I)
@@ -1103,4 +1106,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sys, traceback
+    try:
+        main()
+    except Exception:                                             # v10.1: show the error clearly in the Actions log
+        traceback.print_exc()
+        sys.exit(1)
