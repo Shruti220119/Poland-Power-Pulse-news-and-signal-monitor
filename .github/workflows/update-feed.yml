@@ -17,9 +17,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6          # Node 24 (was v4 / Node 20)
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6      # Node 24 (was v5 / Node 20)
         with:
           python-version: "3.11"
 
@@ -38,11 +38,11 @@ jobs:
           import json
           s = json.load(open("data/feed_status.json"))
           a = s.get("additional_sources", {})
-          print("Run finished:", s["run_finished_utc"])
-          print("Websites OK:", s["websites_ok"], "/", s["websites_read_directly"])
+          print("Run finished:", s.get("run_finished_utc"))
+          print("Websites OK:", s.get("websites_ok"), "/", s.get("websites_read_directly"))
           print("Additional sources checked:", a.get("checked_this_run"), "/", a.get("live_sources"),
                 "· read OK:", a.get("with_at_least_one_ok_read"))
-          print("New items this run:", s["new_items_this_run"], "· items in feed:", s["items_in_feed"])
+          print("New items this run:", s.get("new_items_this_run"), "· items in feed:", s.get("items_in_feed"))
           PY
 
       - name: Commit updated data
